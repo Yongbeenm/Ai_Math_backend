@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[project]
+name = "khmer-math-lab-backend"
+version = "0.1.0"
+description = "Backend + AI system for Khmer Math Lab: understands Khmer math language, solves it deterministically, explains it in Khmer."
+requires-python = ">=3.11"
