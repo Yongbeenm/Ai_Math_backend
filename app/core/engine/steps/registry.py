@@ -8,6 +8,7 @@ then add one line here. No other file needs to change.
 from __future__ import annotations
 
 from app.core.engine.steps.base import StepGenerator
+from app.core.engine.steps.calculus_limit import LimitStepGenerator
 from app.core.engine.steps.inequality import LinearInequalityStepGenerator
 from app.core.engine.steps.linear import LinearStepGenerator
 from app.core.engine.steps.polynomial import PolynomialStepGenerator
@@ -21,6 +22,7 @@ _GENERATORS: dict[str, StepGenerator] = {
         PolynomialStepGenerator(),
         SystemStepGenerator(),
         LinearInequalityStepGenerator(),
+        LimitStepGenerator(),
     ]
 }
 

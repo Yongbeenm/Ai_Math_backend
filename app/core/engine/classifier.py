@@ -7,7 +7,7 @@ eventually branch on it (e.g. to show a different icon per problem type).
 from __future__ import annotations
 
 import sympy
-from sympy import Poly
+from sympy import Eq, Limit, Poly
 
 from app.core.parser.expression_parser import ParsedMath
 
@@ -37,6 +37,12 @@ def classify_problem(parsed: ParsedMath) -> str:
         except Exception:
             return "unknown_inequality"
     
+    # Check if it's a calculus limit
+    if isinstance(expr, Limit):
+        return "calculus_limit"
+    if isinstance(expr, Eq) and (isinstance(expr.rhs, Limit) or isinstance(expr.lhs, Limit)):
+        return "calculus_limit"
+
     # Now check equations
     if not parsed.is_equation:
         return "algebraic_expression" if parsed.symbols else "arithmetic_expression"

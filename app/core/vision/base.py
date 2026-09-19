@@ -11,11 +11,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 
+from typing import Any
+
+
 @dataclass
 class VisionResult:
     detected_text: str | None
     confidence: float
     error_message: str | None = None
+    exercise_metadata: dict[str, Any] | None = None
 
 
 class MathVisionEngine(ABC):

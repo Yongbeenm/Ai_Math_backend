@@ -1,44 +1,60 @@
 """
-Pull the mathematical expression out of a sentence that mixes Khmer words
-and math, e.g. "ដោះស្រាយសមីការនេះ 2x + 5 = 15" -> "2x+5=15".
+Pull the mathematical expression out of a sentence that mixes Khmer or English
+words and math, e.g.:
+- "ដោះស្រាយសមីការនេះ 2x + 5 = 15" -> "2x+5=15"
+- "Exercise 1: Solve for x: 3x - 9 = 0" -> "3x-9=0"
+- "Exercise (លំហាត់): Find the value of x if 4x + 10 = 30" -> "4x+10=30"
 
-This is intentionally simple (regex-based) for phase 1. It is called from
-one place only (math_service.process_question), so it can be swapped for a
-smarter extractor (e.g. a sequence-tagging model) later without touching
-anything else in the pipeline.
+Uses the intelligent bilingual exercise parser with backward-compatible fallback.
 """
+from __future__ import annotations
+
 import re
 
 # A run of characters that looks like math: digits, letters (variables),
-# operators, parentheses, decimal points, '=', inequality signs, and whitespace.
-_EXPRESSION_RUN = re.compile(r"[0-9a-zA-Z.\+\-\*/\^=()\s<>=≤≥]{3,}")
+# operators, parentheses, decimal points, '=', inequality signs, whitespace,
+# and LaTeX syntax (backslashes, braces, underscores).
+_EXPRESSION_RUN = re.compile(r"[0-9a-zA-Z.\+\-\*/\^=()\s<>=≤≥\\{}_]{3,}")
 
-# Two-or-more consecutive Latin letters is an instructional *word* ("solve",
-# "find", "the"...), not a variable. Real algebra variables are single
-# letters (x, y, n, ...), so stripping whole words first stops English (or
-# romanized) instruction text from being swallowed into the expression as
-# spurious multiplied-together variables, e.g. "solve 2x+5=15" would
-# otherwise parse as "s*o*l*v*e*2*x+5=15".
-#
-# NOTE: this is a deliberate phase-1 simplification. If/when function names
-# like sin/cos/log are supported, this rule will need to allow-list those.
-_MULTI_LETTER_WORD = re.compile(r"[a-zA-Z]{2,}")
+# Two-or-more consecutive Latin letters that are NOT part of a LaTeX command
+_MULTI_LETTER_WORD = re.compile(r"(?<!\\)\b[a-zA-Z]{2,}\b")
 
 
 def extract_expression(normalized_text: str) -> str | None:
-    """Return the best-guess math substring from already Khmer-normalized
-    text, or None if nothing looking like math was found."""
-    text_without_words = _MULTI_LETTER_WORD.sub(" ", normalized_text)
+    """Return the best-guess math substring from Khmer or English text,
+    or None if nothing looking like math was found."""
+    if not normalized_text:
+        return None
+
+    # Use the smart bilingual exercise parser
+    try:
+        from app.core.khmer.exercise_parser import parse_exercise
+
+        parsed = parse_exercise(normalized_text)
+        if parsed.primary_expression:
+            return parsed.primary_expression
+    except Exception:
+        pass
+
+    # Fallback to standard regex heuristic
+    from app.core.khmer.exercise_parser import _strip_non_math_words
+    text_without_words = _strip_non_math_words(normalized_text)
 
     candidates = _EXPRESSION_RUN.findall(text_without_words)
     if not candidates:
         return None
 
-    # Prefer candidates that contain at least one digit; plain prose can
-    # otherwise match short runs of spaces/parentheses.
+    # Prefer candidates that contain at least one digit
     with_digits = [c for c in candidates if re.search(r"\d", c)]
     pool = with_digits or candidates
 
     best = max(pool, key=len).strip()
-    best = re.sub(r"\s+", "", best)  # spacing doesn't matter to the parser
+    if "\\" in best or "{" in best:
+        best = re.sub(r"\s+", " ", best).strip()
+    else:
+        best = re.sub(r"\s+", "", best)
+
+    best = best.strip(".:;=, ")
+    while best.endswith("\\"):
+        best = best[:-1].rstrip(".:;=, ")
     return best or None

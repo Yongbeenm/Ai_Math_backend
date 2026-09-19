@@ -17,7 +17,14 @@ Start the data collection server:
 python scripts/data_collection_server.py
 ```
 
-### 3. Train Your First Model
+### 3. Run Khmer OCR
+Test Khmer OCR on an image and solve it:
+```bash
+# Run OCR using Kiri OCR:
+python scripts/run_khmer_ocr.py --image sample_data/images/000001.png --solve
+```
+
+### 4. Train Your First Model
 
 ```bash
 # Intent classification

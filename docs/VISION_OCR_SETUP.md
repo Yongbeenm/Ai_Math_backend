@@ -11,28 +11,26 @@ The Khmer Math Lab backend supports multiple OCR providers through a pluggable a
 | Provider | Cost | Accuracy | Khmer Support | Math Support | Setup Difficulty |
 |----------|------|----------|---------------|--------------|------------------|
 | **Stub** (default) | Free | N/A | N/A | N/A | None |
-| **Tesseract** | Free | Medium | ✅ Good | ⚠️ Limited | Easy |
-| **Google Vision** | Free tier + paid | High | ✅ Excellent | ⚠️ Good | Medium |
-| **Mathpix** | Paid | Excellent | ✅ Good | ✅ Excellent | Easy |
+| **Kiri OCR** (`kiri`, `khmer_ocr`) | Free (Offline) | High | 🇰🇭 Native/Excellent | ✅ Good | Easy (`pip install`) |
+| **Tesseract** (`tesseract`) | Free (Offline) | High (with CLAHE) | ✅ Good | ✅ Good (with Sanitizer) | Medium (needs brew) |
+| **Gemini Vision** (`gemini`) | Free tier + paid | Superior (SOTA) | 🇰🇭 Native/Exceptional | 🧮 SOTA | Easy (`GEMINI_API_KEY`) |
+| **Google Vision** (`google`) | Free tier + paid | High | ✅ Excellent | ⚠️ Good | Medium (GCP account) |
+| **Mathpix** (`mathpix`) | Paid | Excellent | ✅ Good | ✅ Excellent | Easy (API keys) |
 
 ## Quick Start
 
-The easiest way to get started is with **Tesseract** (free, offline):
+The easiest way to get started with **native Khmer OCR** is with **Kiri OCR** (Python library, free, offline):
 
 ```bash
-# 1. Install Tesseract
-brew install tesseract  # macOS
-# sudo apt-get install tesseract-ocr  # Ubuntu
+# 1. Install Kiri OCR
+pip install kiri-ocr
 
-# 2. Install Python dependencies
-pip install pytesseract pillow
+# 2. Set environment variable in .env
+VISION_PROVIDER=kiri  # or khmer_ocr
 
-# 3. Set environment variable
-export VISION_PROVIDER=tesseract
-
-# 4. Test it
+# 3. Test it via API
 curl -X POST http://localhost:8000/api/v1/math/vision \
-  -F "image=@test_image.jpg"
+  -F "image=@math_problem.jpg"
 ```
 
 ---
@@ -52,7 +50,53 @@ No additional configuration needed. Returns "not implemented" message.
 
 ---
 
-### 2. Tesseract (Recommended for Development)
+### 2. Kiri OCR (Recommended for Native Khmer OCR, Free & Offline)
+
+**When to use:** Local, high-accuracy Khmer & English OCR without cloud API fees or system binary installations.
+
+**Pros:**
+- ✅ Native Khmer script recognition (consonants, subscripts, vowels, numerals)
+- ✅ Free, open-source, runs offline
+- ✅ Transformer architecture with CTC + attention decoder
+- ✅ Pure Python package (`pip install kiri-ocr`)
+- ✅ No cloud API account or internet required during inference
+
+**Cons:**
+- ⚠️ Model weights (~150MB) downloaded on first execution
+- ⚠️ Uses PyTorch for inference
+
+**Setup:**
+```bash
+pip install kiri-ocr
+export VISION_PROVIDER=kiri
+```
+
+---
+
+### 3. Gemini Vision (Recommended for Complex Multimodal Worksheets)
+
+**When to use:** Production, state-of-the-art accuracy on handwritten math, complex textbook worksheets, and mixed Khmer/English exercises.
+
+**Pros:**
+- ✅ State-of-the-art multimodal understanding for Khmer script and handwriting
+- ✅ Automatically isolates exercise titles ("លំហាត់ទី 1"), instructions, and math expressions
+- ✅ Understands complex mathematical formulas, fractions, radicals, and systems
+- ✅ Fast response times with `gemini-2.5-flash`
+
+**Cons:**
+- ⚠️ Requires internet connection and `GEMINI_API_KEY` (free tier available at AI Studio)
+
+**Setup:**
+1. Get an API key from [Google AI Studio](https://aistudio.google.com/)
+2. In `.env`:
+```bash
+VISION_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+---
+
+### 4. Tesseract (Traditional Open-Source OCR)
 
 **When to use:** Free development, offline usage, privacy-sensitive applications.
 
@@ -114,7 +158,7 @@ If Khmer isn't in the `--list-langs` output:
 
 ---
 
-### 3. Google Cloud Vision (Recommended for Production)
+### 4. Google Cloud Vision (Recommended for Production)
 
 **When to use:** Production use with good Khmer support, affordable pricing.
 
@@ -162,7 +206,7 @@ GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 
 ---
 
-### 4. Mathpix (Best for Complex Math)
+### 5. Mathpix (Best for Complex Math)
 
 **When to use:** Handwritten complex equations, matrices, advanced notation.
 

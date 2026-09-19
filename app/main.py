@@ -37,9 +37,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from pathlib import Path
+
+from fastapi.staticfiles import StaticFiles
+
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
-
-@app.get("/")
-def root() -> dict:
-    return {"app": settings.app_name, "version": settings.app_version, "docs": "/docs"}
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+if frontend_dir.exists() and (frontend_dir / "index.html").exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+else:
+    @app.get("/")
+    def root() -> dict:
+        return {"app": settings.app_name, "version": settings.app_version, "docs": "/docs"}

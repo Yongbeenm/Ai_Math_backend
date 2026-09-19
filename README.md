@@ -13,10 +13,10 @@ built and tested for local development on a MacBook Pro M3 Pro / Python
 
 - ✅ **Polynomial Equations**: Full support for cubic, quartic, and higher-degree equations with step-by-step solutions
 - ✅ **Linear Inequalities**: Solve inequalities with proper sign reversal and interval notation
-- ✅ **Math Vision OCR**: Multi-provider OCR system (Tesseract, Google Vision, Mathpix) - see `docs/VISION_OCR_SETUP.md`
+- ✅ **Native Khmer Math Vision OCR**: Pluggable OCR system with native Khmer support (Kiri OCR, Tesseract, Google Vision, Mathpix) - see `docs/VISION_OCR_SETUP.md`
 - ✅ **Enhanced Khmer Support**: 20+ new keywords for natural Khmer queries (ស្វែងរក, គណនា, បញ្ហា, etc.)
 - ✅ **Advanced History API**: Pagination, filtering by type/date, search, statistics, and delete operations
-- ✅ **Comprehensive Testing**: 125 tests including edge cases, security, and robustness checks
+- ✅ **Comprehensive Testing**: 132 tests including edge cases, security, and robustness checks
 - ✅ **Production Ready**: All deprecation warnings fixed, security hardened, fully documented
 
 ## Design principle: the AI never does the arithmetic
@@ -113,6 +113,7 @@ core requirement.
 | - **Percentage & fraction keywords**     | ✅ **NEW** | ភាគរយ, ប្រភាគ support |
 | **Math Vision / OCR**                    |        |         |
 | - **Multi-provider infrastructure**      | ✅ **NEW** | Pluggable OCR system |
+| - **Kiri Khmer OCR (native deep learning)**| ✅ **NEW** | Offline, bilingual Khmer+English OCR |
 | - **Tesseract integration**              | ✅ **NEW** | Free, offline OCR |
 | - **Google Cloud Vision**                | ✅ **NEW** | Best for Khmer text |
 | - **Mathpix integration**                | ✅ **NEW** | Best for complex math |
@@ -203,26 +204,39 @@ handles it automatically.
 
 ## Setting up Math Vision OCR
 
-**Quick Start (Free & Offline):**
+**Option 1: Kiri OCR (Recommended: Native Khmer + English, Free & Offline)**
 ```bash
-# Install Tesseract
-brew install tesseract  # macOS
+# 1. Install Kiri OCR
+pip install kiri-ocr
 
-# Install Python dependencies
-pip install pytesseract pillow
+# 2. Configure in .env
+VISION_PROVIDER=kiri  # or khmer_ocr
 
-# Configure in .env
-VISION_PROVIDER=tesseract
+# 3. Test from CLI
+python training/scripts/run_khmer_ocr.py --image training/sample_data/images/000001.png --solve
 
-# Test the endpoint
+# Or test the HTTP endpoint
 curl -X POST http://localhost:8000/api/v1/math/vision \
   -F "image=@math_problem.jpg"
 ```
 
+**Option 2: Tesseract (Traditional Open-Source OCR)**
+```bash
+# Install Tesseract engine and languages
+brew install tesseract tesseract-lang  # macOS
+
+# Install Python wrapper
+pip install pytesseract pillow
+
+# Configure in .env
+VISION_PROVIDER=tesseract
+```
+
 **For Production:** See comprehensive setup guide at `docs/VISION_OCR_SETUP.md` covering:
+- Kiri OCR (native Khmer deep learning OCR, free, offline)
 - Tesseract (free, offline)
-- Google Cloud Vision (best for Khmer, $1.50 per 1000 images)
-- Mathpix (best for complex math, specialized)
+- Google Cloud Vision (cloud API, best for general Khmer documents)
+- Mathpix (cloud API, best for complex mathematical notation)
 - Cost comparison and recommendations
 
 ## Database

@@ -62,5 +62,8 @@ def normalize_khmer_text(text: str) -> str:
     for khmer_char, latin_char in _PUNCTUATION_MAP.items():
         text = text.replace(khmer_char, latin_char)
     text = convert_percentages_to_decimals(text)
-    text = re.sub(r"\s+", " ", text)
-    return text
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n\s+", "\n", text)
+    text = re.sub(r"\s+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()

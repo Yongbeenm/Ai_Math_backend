@@ -78,54 +78,91 @@ class TesseractVisionEngine(MathVisionEngine):
     
     def detect(self, image_bytes: bytes) -> VisionResult:
         """
-        Use Tesseract to detect text in image.
+        Use Tesseract to detect text in image with preprocessing and math sanitization.
         """
+        if not image_bytes:
+            return VisionResult(
+                detected_text=None,
+                confidence=0.0,
+                error_message="Image data is empty",
+            )
+
         try:
-            # Open image from bytes
-            image = Image.open(BytesIO(image_bytes))
-            
-            # Configure Tesseract for better math/number recognition
-            custom_config = r'--oem 3 --psm 6'  # Use LSTM, assume uniform block of text
-            
-            # Perform OCR
-            detected_text = pytesseract.image_to_string(
+            from app.core.khmer.exercise_parser import parse_exercise
+            from app.core.vision.postprocessor import sanitize_ocr_math_text
+            from app.core.vision.preprocessor import preprocess_image
+
+            # 1. Preprocess image for OCR (CLAHE contrast, upscaling, denoising, margin padding)
+            processed_bytes = preprocess_image(image_bytes, mode="enhanced_grayscale")
+            image = Image.open(BytesIO(processed_bytes))
+
+            # 2. Configure Tesseract (PSM 6: block of text, fallback to PSM 3: fully automatic)
+            custom_config = r"--oem 3 --psm 6"
+            raw_text = pytesseract.image_to_string(
                 image,
                 lang=self.lang,
-                config=custom_config
+                config=custom_config,
             ).strip()
-            
-            # Get confidence data
+
+            if not raw_text:
+                # Fallback to automatic page segmentation
+                raw_text = pytesseract.image_to_string(
+                    image,
+                    lang=self.lang,
+                    config=r"--oem 3 --psm 3",
+                ).strip()
+
+            # 3. Get confidence data
             data = pytesseract.image_to_data(
                 image,
                 lang=self.lang,
                 config=custom_config,
-                output_type=pytesseract.Output.DICT
+                output_type=pytesseract.Output.DICT,
             )
-            
-            # Calculate average confidence (filter out -1 values)
             confidences = [
-                float(conf) / 100.0 
-                for conf in data['conf'] 
+                float(conf) / 100.0
+                for conf in data.get("conf", [])
                 if conf != -1
             ]
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
-            
-            if not detected_text:
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0.85
+
+            if not raw_text:
                 return VisionResult(
                     detected_text=None,
                     confidence=0.0,
-                    error_message="No text detected in image"
+                    error_message="No text detected in image",
                 )
-            
+
+            # 4. OCR post-processing (superscripts, operators, collapsed powers, Khmer digits)
+            sanitized_text = sanitize_ocr_math_text(raw_text)
+
+            # 5. Extract exercise structure (title, instruction, sub-exercises)
+            parsed_exercise = parse_exercise(sanitized_text)
+            metadata = {
+                "exercise_title": parsed_exercise.exercise_title,
+                "instruction": parsed_exercise.instruction,
+                "primary_expression": parsed_exercise.primary_expression,
+                "sub_exercises": [
+                    {
+                        "label": sub.label,
+                        "raw_text": sub.raw_text,
+                        "expression": sub.expression,
+                        "intent": sub.intent,
+                    }
+                    for sub in parsed_exercise.sub_exercises
+                ],
+            }
+
             return VisionResult(
-                detected_text=detected_text,
+                detected_text=sanitized_text,
                 confidence=avg_confidence,
-                error_message=None
+                error_message=None,
+                exercise_metadata=metadata,
             )
-            
+
         except Exception as e:
             return VisionResult(
                 detected_text=None,
                 confidence=0.0,
-                error_message=f"Tesseract error: {str(e)}"
+                error_message=f"Tesseract error: {str(e)}",
             )

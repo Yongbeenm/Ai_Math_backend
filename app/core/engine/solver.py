@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import sympy
-from sympy import Eq
+from sympy import Eq, Limit
 
 from app.core.engine.steps.registry import get_step_generator
 from app.core.engine.verification import verify_solution
@@ -87,6 +87,45 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
             steps=steps,
         )
     
+    # Check if it's a calculus limit
+    is_limit = (
+        problem_type == "calculus_limit"
+        or isinstance(expr, Limit)
+        or (isinstance(expr, Eq) and isinstance(expr.rhs, Limit))
+        or (isinstance(expr, Eq) and isinstance(expr.lhs, Limit))
+    )
+
+    if is_limit:
+        if isinstance(expr, Eq):
+            limit_obj = expr.rhs if isinstance(expr.rhs, Limit) else expr.lhs
+            variable_name = str(expr.lhs if isinstance(expr.rhs, Limit) else expr.rhs)
+        else:
+            limit_obj = expr
+            variable_name = str(limit_obj.args[1]) if len(limit_obj.args) > 1 else None
+
+        ans_val = limit_obj.doit()
+        ans_str = str(ans_val)
+
+        generator = get_step_generator("calculus_limit")
+        if generator is not None:
+            steps = generator.generate(limit_obj)
+        else:
+            steps = [
+                SolutionStep(
+                    order=1,
+                    description_km="គណនាលីមីត៖",
+                    description_en="Evaluate the limit:",
+                    expression=f"{expr} = {ans_str}",
+                )
+            ]
+
+        return SolveResult(
+            answer=ans_str,
+            variable=variable_name,
+            is_verified=True,
+            steps=steps,
+        )
+
     if not parsed.is_equation:
         # Pure arithmetic/algebraic expression: simplify, don't "solve".
         simplified = sympy.simplify(expr)
