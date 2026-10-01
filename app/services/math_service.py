@@ -10,14 +10,17 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Any
 
-from app.core.engine.classifier import classify_problem
-from app.core.engine.solver import solve
-from app.core.exceptions import MathProcessingError
-from app.core.khmer.extractor import extract_expression
-from app.core.khmer.intent import MathIntent, RuleBasedIntentClassifier
-from app.core.khmer.normalizer import normalize_khmer_text
-from app.core.parser.expression_parser import ExpressionParseError, parse_math_text
-from app.models.schemas import SolveData
+from app.api.schemas.responses import SolveData
+from app.classifier.problem_classifier.classifier import classify_problem
+from app.classifier.problem_classifier.intent_classifier import (
+    MathIntent,
+    RuleBasedIntentClassifier,
+)
+from app.parser.expression_parser.khmer_extractor import extract_expression
+from app.parser.expression_parser.khmer_normalizer import normalize_khmer_text
+from app.parser.math_parser.expression_parser import ExpressionParseError, parse_math_text
+from app.solvers import solve
+from app.utils.exceptions import MathProcessingError
 
 # Re-export MathProcessingError for backward compatibility
 __all__ = ["MathProcessingError", "MathService", "get_math_service", "process_question"]

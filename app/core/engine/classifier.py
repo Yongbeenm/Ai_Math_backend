@@ -3,6 +3,9 @@ Classify a ParsedMath object into a problem_type string. This string drives
 both which step generator is used and what the API reports back in
 `problem_type`, so keep the set of values stable — the mobile app may
 eventually branch on it (e.g. to show a different icon per problem type).
+
+This module now uses the enhanced classifier for improved detection while
+maintaining backward compatibility with existing code.
 """
 
 from __future__ import annotations
@@ -12,8 +15,32 @@ from sympy import Eq, Limit, Poly
 
 from app.core.parser.expression_parser import ParsedMath
 
+# Import enhanced classifier
+try:
+    from app.core.engine.classifier_enhanced import (
+        classify_problem as _classify_enhanced,
+        classify_with_characteristics,
+        get_problem_complexity,
+    )
+
+    _USE_ENHANCED = True
+except ImportError:
+    _USE_ENHANCED = False
+    classify_with_characteristics = None
+    get_problem_complexity = None
+
 
 def classify_problem(parsed: ParsedMath) -> str:
+    """
+    Classify a parsed mathematical expression into a problem type.
+
+    Uses enhanced classifier if available, falls back to legacy implementation.
+    """
+    # Use enhanced classifier if available
+    if _USE_ENHANCED:
+        return _classify_enhanced(parsed)
+
+    # Legacy implementation (fallback)
     expr = parsed.sympy_expr
 
     # Check if it's an inequality (relational expression) - do this FIRST
@@ -71,3 +98,9 @@ def classify_problem(parsed: ParsedMath) -> str:
     if degree > 2:
         return "polynomial_equation"
     return "unknown_equation"
+
+
+# Re-export enhanced functions if available
+__all__ = ["classify_problem"]
+if _USE_ENHANCED:
+    __all__.extend(["classify_with_characteristics", "get_problem_complexity"])

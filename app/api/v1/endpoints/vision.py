@@ -36,22 +36,71 @@ def get_vision_engine() -> BaseVisionEngine:
     return _vision_engine
 
 
+def get_vision_service(
+    vision_engine: BaseVisionEngine = Depends(get_vision_engine),
+    math_service: MathService = Depends(get_math_service),
+) -> VisionService:
+    """Dependency provider for VisionService with proper injection."""
+    return VisionService(vision_engine=vision_engine, math_service=math_service)
+
+
 @router.post("/math/vision", response_model=APIResponse, tags=["vision"])
 async def vision_solve(
     image: UploadFile = File(...),
-    vision_engine: BaseVisionEngine = Depends(get_vision_engine),
-    math_service: MathService = Depends(get_math_service),
+    vision_service: VisionService = Depends(get_vision_service),
 ) -> APIResponse:
     """
     Math Vision endpoint: photo -> OCR -> solve -> step-by-step solution.
+
+    This endpoint processes a single math problem from an image and returns
+    the solved result. For images with multiple sub-exercises, use /math/vision/batch.
     """
     image_bytes = await image.read()
-    service = VisionService(vision_engine=vision_engine, math_service=math_service)
 
     try:
-        data = service.process_image(image_bytes)
+        data = vision_service.process_image(image_bytes)
         return APIResponse(success=True, data=data, error=None)
     except VisionProcessingError as exc:
         return APIResponse(success=False, data=None, error=exc.message)
     except MathProcessingError as exc:
         return APIResponse(success=False, data=exc.details, error=exc.message)
+
+
+@router.post("/math/vision/batch", response_model=APIResponse, tags=["vision"])
+async def vision_solve_batch(
+    image: UploadFile = File(...),
+    vision_service: VisionService = Depends(get_vision_service),
+) -> APIResponse:
+    """
+    Batch Math Vision endpoint: photo -> OCR -> parse multi-exercise -> structured problems.
+
+    This endpoint handles images containing multiple sub-exercises (e.g., Exercise 1: a) b) c))
+    and returns a structured MultiProblemSet with:
+    - Exercise title and instruction
+    - Individual MathProblem objects for each sub-exercise
+    - Confidence scores and warnings for each problem
+    - Overall batch metadata
+
+    Use this endpoint when you expect multiple problems in one image.
+    Each problem can then be solved individually via POST /math/solve.
+    """
+    image_bytes = await image.read()
+
+    try:
+        problem_set = vision_service.process_image_batch(image_bytes)
+
+        return APIResponse(
+            success=True,
+            data=problem_set.to_dict(),
+            error=None,
+        )
+    except VisionProcessingError as exc:
+        logger.error(f"Vision processing error in batch mode: {exc}")
+        return APIResponse(success=False, data=None, error=exc.message)
+    except Exception as exc:
+        logger.error(f"Unexpected error in batch vision processing: {exc}", exc_info=True)
+        return APIResponse(
+            success=False,
+            data=None,
+            error=f"Failed to process image batch: {str(exc)}",
+        )

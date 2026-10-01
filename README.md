@@ -13,10 +13,17 @@ built and tested for local development on a MacBook Pro M3 Pro / Python
 
 - ✅ **Polynomial Equations**: Full support for cubic, quartic, and higher-degree equations with step-by-step solutions
 - ✅ **Linear Inequalities**: Solve inequalities with proper sign reversal and interval notation
-- ✅ **Native Khmer Math Vision OCR**: Pluggable OCR system with native Khmer support (Kiri OCR, Tesseract, Google Vision, Mathpix) - see `docs/VISION_OCR_SETUP.md`
+- ✅ **Advanced OCR System**: 
+  - 🎯 Intelligent routing (auto-selects best engine per image)
+  - 🔄 Multi-engine ensemble (voting, fallback, confidence strategies)
+  - 🖼️ Enhanced preprocessing (auto-deskew, perspective correction, adaptive binarization)
+  - 📝 Advanced postprocessing (LaTeX normalization, OCR error correction)
+  - 💾 Result caching (SHA-256 hashing, LRU + persistent cache)
+  - 📊 Evaluation tools (CER/WER metrics, benchmarking)
+- ✅ **Native Khmer Math Vision OCR**: Pluggable OCR system with native Khmer support (Kiri OCR, Tesseract, Google Vision, Mathpix, Gemini)
 - ✅ **Enhanced Khmer Support**: 20+ new keywords for natural Khmer queries (ស្វែងរក, គណនា, បញ្ហា, etc.)
 - ✅ **Advanced History API**: Pagination, filtering by type/date, search, statistics, and delete operations
-- ✅ **Comprehensive Testing**: 132 tests including edge cases, security, and robustness checks
+- ✅ **Comprehensive Testing**: 196+ tests including edge cases, security, and robustness checks
 - ✅ **Production Ready**: All deprecation warnings fixed, security hardened, fully documented
 
 ## Design principle: the AI never does the arithmetic
@@ -93,11 +100,18 @@ core requirement.
 | - Expression extraction                  | ✅ done | Pulls math from Khmer sentences |
 | - **Percentage & fraction keywords**     | ✅ **NEW** | ភាគរយ, ប្រភាគ support |
 | **Math Vision / OCR**                    |        |         |
-| - **Multi-provider infrastructure**      | ✅ **NEW** | Pluggable OCR system |
-| - **Kiri Khmer OCR (native deep learning)**| ✅ **NEW** | Offline, bilingual Khmer+English OCR |
-| - **Tesseract integration**              | ✅ **NEW** | Free, offline OCR |
-| - **Google Cloud Vision**                | ✅ **NEW** | Best for Khmer text |
-| - **Mathpix integration**                | ✅ **NEW** | Best for complex math |
+| - **Multi-provider infrastructure**      | ✅ **ENHANCED** | Pluggable OCR system with 6+ engines |
+| - **Intelligent routing**                | ✅ **NEW** | Auto-selects best OCR engine per image |
+| - **Multi-engine ensemble**              | ✅ **NEW** | Voting, fallback, confidence strategies |
+| - **Advanced preprocessing**             | ✅ **NEW** | Auto-deskew, perspective correction, adaptive binarization |
+| - **Enhanced postprocessing**            | ✅ **NEW** | LaTeX normalization, OCR error correction, math notation fixes |
+| - **Result caching**                     | ✅ **NEW** | SHA-256 hashing, LRU + persistent cache, TTL support |
+| - **Evaluation & benchmarking**          | ✅ **NEW** | CER/WER metrics, engine comparison, performance reports |
+| - **Kiri Khmer OCR (native deep learning)**| ✅ done | Offline, bilingual Khmer+English OCR |
+| - **Tesseract integration**              | ✅ done | Free, offline OCR |
+| - **Gemini Vision integration**          | ✅ done | SOTA multimodal vision for Khmer + math |
+| - **Google Cloud Vision**                | ✅ done | Best for Khmer text documents |
+| - **Mathpix integration**                | ✅ done | Best for complex math notation |
 | - Vision API endpoint                    | ✅ done | `/math/vision` with full pipeline |
 | **History & Data Management**            |        |         |
 | - **Pagination support**                 | ✅ **NEW** | limit/offset parameters |

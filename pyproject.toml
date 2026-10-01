@@ -58,6 +58,8 @@ ignore = [
     "W293", # blank line contains whitespace
     "E741", # ambiguous variable name
     "UP042", # str, Enum inheritance
+    "B904", # raise ... from err
+    "F841", # local variable assigned but never used
 ]
 
 [tool.ruff.lint.isort]

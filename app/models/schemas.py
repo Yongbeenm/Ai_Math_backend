@@ -29,6 +29,16 @@ class SolutionStep(BaseModel):
     description_en: str | None = None
     expression: str | None = None
 
+    # Enhanced metadata for operation tracking
+    operation: str | None = (
+        None  # Type of operation: "add", "subtract", "multiply", "divide", "factor", etc.
+    )
+    operands: list[str] = Field(default_factory=list)  # Values involved in operation
+    transformation: str | None = (
+        None  # What changed: "isolate_variable", "simplify", "expand", etc.
+    )
+    equation_side: str | None = None  # Which side: "left", "right", "both"
+
 
 class SolveData(BaseModel):
     problem_type: str

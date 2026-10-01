@@ -21,7 +21,7 @@ def create_vision_engine(provider: str | None = None) -> MathVisionEngine:
     Create a vision engine based on provider name.
 
     Args:
-        provider: One of "stub", "tesseract", "mathpix", "google".
+        provider: One of "stub", "tesseract", "mathpix", "google", or "ensemble:strategy:providers".
                   If None, reads from VISION_PROVIDER environment variable.
                   Defaults to "stub" if not set.
 
@@ -33,7 +33,7 @@ def create_vision_engine(provider: str | None = None) -> MathVisionEngine:
         ImportError: If provider library is not installed
 
     Environment variables:
-        VISION_PROVIDER: "stub", "tesseract", "mathpix", or "google"
+        VISION_PROVIDER: "stub", "tesseract", "mathpix", "google", or ensemble config
 
         For Tesseract:
             (none needed - uses local installation)
@@ -48,12 +48,49 @@ def create_vision_engine(provider: str | None = None) -> MathVisionEngine:
         For Kiri OCR (Khmer & English):
             (none needed - models download on first run)
 
+        For Ensemble:
+            Format: "ensemble:strategy:provider1,provider2,provider3"
+            Example: "ensemble:voting:kiri,tesseract,gemini"
+            Strategies: fallback, voting, confidence, best_of_n
+
+        For Intelligent Router:
+            Use: "smart", "intelligent", "router", or "auto"
+            Automatically analyzes images and routes to best engine
+
     Example:
         >>> engine = create_vision_engine("tesseract")
         >>> result = engine.detect(image_bytes)
+        >>> ensemble = create_vision_engine("ensemble:voting:kiri,tesseract")
+        >>> smart = create_vision_engine("smart")  # Intelligent routing
     """
     provider = provider or os.getenv("VISION_PROVIDER", "stub")
     provider = provider.lower().strip()
+
+    # Handle intelligent routing
+    if provider in ("smart", "intelligent", "router", "auto"):
+        try:
+            from app.core.vision.router import create_intelligent_router
+
+            return create_intelligent_router(mode="fallback")  # type: ignore
+        except ImportError as e:
+            raise ImportError("Intelligent router requires: app.core.vision.router module") from e
+
+    # Handle ensemble configuration
+    if provider.startswith("ensemble:"):
+        try:
+            from app.core.vision.ensemble import create_ocr_ensemble
+
+            parts = provider.split(":", 2)
+            if len(parts) == 3:
+                _, strategy, providers = parts
+                return create_ocr_ensemble(providers, strategy=strategy)  # type: ignore
+            elif len(parts) == 2:
+                _, providers = parts
+                return create_ocr_ensemble(providers, strategy="fallback")  # type: ignore
+            else:
+                raise ValueError("Invalid ensemble format. Use: ensemble:strategy:providers")
+        except ImportError as e:
+            raise ImportError("Ensemble provider requires: app.core.vision.ensemble module") from e
 
     if provider == "stub":
         return NotImplementedVisionEngine()
@@ -124,7 +161,8 @@ def create_vision_engine(provider: str | None = None) -> MathVisionEngine:
     else:
         raise ValueError(
             f"Unknown vision provider: {provider}\n"
-            f"Available providers: stub, tesseract, kiri (khmer_ocr), pix2tex (latex_ocr), mathpix, google, gemini"
+            f"Available providers: stub, tesseract, kiri (khmer_ocr), pix2tex (latex_ocr), "
+            f"mathpix, google, gemini, smart (intelligent router), or ensemble:strategy:providers"
         )
 
 

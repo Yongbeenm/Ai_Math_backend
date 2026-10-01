@@ -4,7 +4,17 @@ This guide explains how to set up and configure different OCR providers for the 
 
 ## Overview
 
-The Khmer Math Lab backend supports multiple OCR providers through a pluggable architecture. You can easily switch between providers by setting an environment variable.
+The Khmer Math Lab backend supports multiple OCR providers through a pluggable architecture with advanced features:
+
+- **Multiple OCR Engines**: Tesseract, Kiri OCR, Google Vision, Mathpix, Gemini Vision, Pix2Tex
+- **Intelligent Routing**: Automatic engine selection based on image analysis
+- **Multi-Engine Ensemble**: Combine multiple engines with voting or fallback
+- **Advanced Preprocessing**: Auto-deskew, perspective correction, adaptive binarization
+- **Enhanced Postprocessing**: LaTeX normalization, OCR error correction, math notation fixes
+- **Result Caching**: SHA-256 based caching for improved performance
+- **Evaluation Tools**: CER/WER metrics, benchmarking, and comparison reports
+
+You can easily switch between providers or enable advanced features by setting environment variables.
 
 ## Available Providers
 
@@ -16,8 +26,202 @@ The Khmer Math Lab backend supports multiple OCR providers through a pluggable a
 | **Gemini Vision** (`gemini`) | Free tier + paid | Superior (SOTA) | 🇰🇭 Native/Exceptional | 🧮 SOTA | Easy (`GEMINI_API_KEY`) |
 | **Google Vision** (`google`) | Free tier + paid | High | ✅ Excellent | ⚠️ Good | Medium (GCP account) |
 | **Mathpix** (`mathpix`) | Paid | Excellent | ✅ Good | ✅ Excellent | Easy (API keys) |
+| **Intelligent Router** (`smart`) | Varies | Adaptive | ✅ Auto-detects | ✅ Auto-detects | Easy (auto-config) |
+| **Ensemble** (`ensemble:*`) | Varies | High (voting) | ✅ Combined | ✅ Combined | Medium (multi-engine) |
+
+## Advanced Features
+
+### 🎯 Intelligent Routing (Recommended)
+
+Automatically analyzes images and routes to the best OCR engine:
+
+```bash
+# Enable intelligent routing
+VISION_PROVIDER=smart
+```
+
+**What it does:**
+- Detects Khmer script → Routes to Kiri OCR or Gemini
+- Detects complex math notation → Routes to Mathpix or Gemini  
+- Detects handwriting → Routes to Gemini
+- Detects low quality → Uses ensemble with voting
+- Default cases → Routes to Tesseract (fast & free)
+
+**Benefits:**
+- No manual configuration needed
+- Optimal accuracy for each image type
+- Automatic fallback on errors
+- Cost-effective (uses free engines when possible)
+
+### 🔄 Multi-Engine Ensemble
+
+Combine multiple OCR engines for improved accuracy:
+
+```bash
+# Voting strategy: run all engines, select most common result
+VISION_PROVIDER=ensemble:voting:kiri,tesseract,gemini
+
+# Confidence strategy: select highest confidence result
+VISION_PROVIDER=ensemble:confidence:kiri,mathpix
+
+# Fallback strategy: try engines sequentially
+VISION_PROVIDER=ensemble:fallback:kiri,tesseract
+
+# Best-of-N: voting among successful results
+VISION_PROVIDER=ensemble:best_of_n:kiri,tesseract,gemini
+```
+
+**Strategies:**
+- `fallback`: Sequential (fast, cost-effective)
+- `voting`: Democratic consensus (most accurate)
+- `confidence`: Trust score-based (balanced)
+- `best_of_n`: Confidence + voting (robust)
+
+### 🖼️ Advanced Image Preprocessing
+
+Enhanced preprocessing options for better OCR accuracy:
+
+```python
+from app.core.vision.preprocessor import preprocess_image
+
+# Auto-deskew tilted images
+processed = preprocess_image(
+    image_bytes,
+    mode="enhanced_grayscale",
+    auto_deskew=True,          # Automatically straighten text
+    auto_perspective=True,      # Fix angled camera shots
+    binarization_method="sauvola"  # Best for handwriting
+)
+
+# Adaptive binarization methods
+processed = preprocess_image(
+    image_bytes,
+    mode="adaptive_binary",
+    binarization_method="gaussian"  # or "otsu", "sauvola"
+)
+```
+
+**Preprocessing modes:**
+- `enhanced_grayscale`: CLAHE contrast + denoising (recommended)
+- `binary`: Otsu thresholding (printed text)
+- `adaptive_binary`: Advanced adaptive methods (handwriting)
+- `standard`: Basic RGB with contrast boost
+
+**Binarization methods:**
+- `otsu`: Global threshold (fast, good for clean images)
+- `gaussian`: Adaptive local threshold (varying lighting)
+- `sauvola`: Local adaptive (best for handwriting)
+
+### 📝 Enhanced Postprocessing
+
+Automatic correction of OCR errors:
+
+```python
+from app.core.vision.postprocessor import sanitize_ocr_math_text
+
+# Automatic corrections:
+text = sanitize_ocr_math_text(raw_ocr_output)
+```
+
+**What it fixes:**
+- LaTeX commands: `\times` → `*`, `\frac{a}{b}` → `(a)/(b)`
+- Character confusions: `O`→`0`, `l`→`1`, `S`→`5`, `B`→`8`, `Z`→`2`
+- Collapsed exponents: `x2` → `x^2`
+- Fragmented numbers: `1 5` → `15`
+- Coefficient spacing: `2 x` → `2x`
+- Fraction formats: `3 over 4` → `3/4`
+- Exponent spacing: `x^ 2` → `x^2`
+- Parenthesis balancing: auto-closes unmatched `(`
+- Equation spacing: `2x=10` → `2x = 10`
+
+### 💾 Result Caching
+
+Cache OCR results for repeated images:
+
+```python
+from app.core.vision.cache import create_cached_engine
+from app.core.vision.factory import create_vision_engine
+
+# Wrap any engine with caching
+engine = create_vision_engine("tesseract")
+cached_engine = create_cached_engine(
+    engine,
+    cache_size=1000,      # Max entries in memory
+    ttl_seconds=3600,     # 1 hour TTL
+    persistent=True       # Enable file cache
+)
+
+# Use cached engine
+result = cached_engine.detect(image_bytes)
+
+# Check cache performance
+stats = cached_engine.get_cache_stats()
+print(f"Hit rate: {stats['hit_rate']:.2%}")
+```
+
+**Benefits:**
+- Avoid reprocessing identical images
+- SHA-256 image hashing
+- In-memory LRU cache + optional persistent cache
+- Configurable TTL and size limits
+
+### 📊 Evaluation & Benchmarking
+
+Compare OCR engines on your dataset:
+
+```python
+from app.core.vision.evaluation import OCREvaluator, OCRBenchmark
+from app.core.vision.factory import create_vision_engine
+
+# Load test cases
+test_cases = [
+    (image1_bytes, "expected text 1"),
+    (image2_bytes, "expected text 2"),
+]
+
+# Evaluate single engine
+engine = create_vision_engine("kiri")
+results = OCREvaluator.evaluate_dataset(engine, test_cases)
+print(f"Accuracy: {results['accuracy']:.2%}")
+print(f"Average CER: {results['average_cer']:.4f}")
+
+# Compare multiple engines
+engines = {
+    "kiri": create_vision_engine("kiri"),
+    "tesseract": create_vision_engine("tesseract"),
+    "gemini": create_vision_engine("gemini"),
+}
+comparison = OCRBenchmark.compare_engines(engines, test_cases)
+report = OCRBenchmark.generate_report(comparison)
+print(report)
+```
+
+**Metrics provided:**
+- Exact match accuracy
+- Character Error Rate (CER)
+- Word Error Rate (WER)
+- Confidence scores
+- Processing time
+- Error analysis
 
 ## Quick Start
+
+### Easiest: Intelligent Routing (Recommended for Production)
+
+Automatically selects the best OCR engine for each image:
+
+```bash
+# In .env file
+VISION_PROVIDER=smart
+
+# Test via API
+curl -X POST http://localhost:8000/api/v1/math/vision \
+  -F "image=@math_problem.jpg"
+```
+
+**Requires:** At least 2 OCR engines installed (e.g., `pip install kiri-ocr` + Tesseract)
+
+### Simple: Single Engine
 
 The easiest way to get started with **native Khmer OCR** is with **Kiri OCR** (Python library, free, offline):
 
@@ -382,12 +586,201 @@ curl -X POST https://api.mathpix.com/v3/text \
 
 ---
 
+## Best Practices
+
+### Choosing the Right Configuration
+
+**For Development:**
+```bash
+VISION_PROVIDER=tesseract  # Fast, free, good enough for testing
+```
+
+**For Production (Balanced):**
+```bash
+VISION_PROVIDER=smart  # Intelligent routing with automatic fallback
+```
+
+**For Production (Maximum Accuracy):**
+```bash
+VISION_PROVIDER=ensemble:voting:kiri,gemini,mathpix  # Multiple engines with voting
+```
+
+**For Production (Cost-Effective):**
+```bash
+VISION_PROVIDER=ensemble:fallback:kiri,tesseract  # Free engines with fallback
+```
+
+### Image Quality Guidelines
+
+For best OCR results, ensure:
+
+✅ **Good:**
+- Adequate lighting (no harsh shadows)
+- Text is horizontal (or use auto-deskew)
+- Minimum 800px on shortest side
+- Sharp focus (not blurry)
+- High contrast between text and background
+
+❌ **Avoid:**
+- Very low resolution (<400px)
+- Extreme angles (>30° rotation)
+- Severe motion blur
+- Heavy shadows or glare
+- Compressed/lossy formats (prefer PNG over JPEG)
+
+### Performance Optimization
+
+**1. Enable Caching for Repeated Images:**
+```python
+from app.core.vision.cache import create_cached_engine
+
+cached = create_cached_engine(
+    engine,
+    cache_size=1000,
+    ttl_seconds=3600,
+    persistent=True
+)
+```
+
+**2. Use Appropriate Preprocessing:**
+- Clean scanned documents → `mode="binary"`, `binarization_method="otsu"`
+- Phone camera photos → `mode="enhanced_grayscale"`, `auto_deskew=True`
+- Handwritten notes → `mode="adaptive_binary"`, `binarization_method="sauvola"`
+
+**3. Choose Efficient Ensemble Strategy:**
+- Development → `fallback` (fastest)
+- Production → `best_of_n` (balanced)
+- Critical accuracy → `voting` (most accurate)
+
+### Security Considerations
+
+- Never commit API keys (use `.env` file)
+- Set appropriate cache TTL for sensitive content
+- Use local engines (Tesseract, Kiri) for private data
+- Validate image file sizes (prevent DOS)
+- Sanitize OCR output before using in queries
+
+### Monitoring & Debugging
+
+**Enable detailed logging:**
+```bash
+LOG_LEVEL=DEBUG
+```
+
+**Check cache performance:**
+```python
+stats = cached_engine.get_cache_stats()
+if stats['hit_rate'] < 0.3:
+    print("Low cache hit rate - consider increasing cache_size")
+```
+
+**Benchmark your engines:**
+```python
+# Compare accuracy on your specific dataset
+comparison = OCRBenchmark.compare_engines(engines, test_cases)
+print(OCRBenchmark.generate_report(comparison))
+```
+
+### Troubleshooting
+
+**Problem: OCR returns empty/wrong results**
+- ✓ Try preprocessing: `auto_deskew=True`, `auto_perspective=True`
+- ✓ Use intelligent routing: `VISION_PROVIDER=smart`
+- ✓ Enable ensemble: `ensemble:voting:kiri,tesseract,gemini`
+
+**Problem: Slow OCR performance**
+- ✓ Enable caching: `create_cached_engine(..., persistent=True)`
+- ✓ Use faster engine: `tesseract` instead of `gemini`
+- ✓ Reduce image size: Resize to 1200px max before OCR
+
+**Problem: Poor accuracy on Khmer text**
+- ✓ Use Kiri OCR: `VISION_PROVIDER=kiri`
+- ✓ Or Gemini: `VISION_PROVIDER=gemini`
+- ✓ Or ensemble: `ensemble:voting:kiri,gemini`
+
+**Problem: Poor accuracy on handwriting**
+- ✓ Use Gemini: `VISION_PROVIDER=gemini`
+- ✓ Preprocess: `binarization_method="sauvola"`
+- ✓ Ensure high image quality (1200px+)
+
+**Problem: Math notation errors**
+- ✓ Postprocessing handles most issues automatically
+- ✓ Use Mathpix for complex math: `VISION_PROVIDER=mathpix`
+- ✓ Or Gemini: `VISION_PROVIDER=gemini`
+
+---
+
+## Configuration Reference
+
+### Complete .env Example
+
+```bash
+# OCR Provider Configuration
+VISION_PROVIDER=smart                    # Options: stub, tesseract, kiri, gemini, mathpix, google, smart, or ensemble:*
+
+# Intelligent Router (if VISION_PROVIDER=smart)
+# No additional config needed - automatically selects best engine
+
+# Ensemble Configuration (if VISION_PROVIDER=ensemble:*)
+# Format: ensemble:strategy:provider1,provider2,provider3
+# Example: ensemble:voting:kiri,tesseract,gemini
+
+# Kiri OCR (if using kiri or khmer_ocr)
+# No config needed - models download automatically
+
+# Tesseract (if using tesseract)
+# No config needed - uses system installation
+
+# Gemini Vision (if using gemini or in ensemble)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Mathpix (if using mathpix or in ensemble)
+MATHPIX_APP_ID=your_mathpix_app_id
+MATHPIX_APP_KEY=your_mathpix_app_key
+
+# Google Cloud Vision (if using google or in ensemble)
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+
+# Logging
+LOG_LEVEL=INFO                           # DEBUG for detailed OCR logs
+```
+
+### Provider Quick Reference
+
+| Configuration | Use Case | Cost | Accuracy |
+|--------------|----------|------|----------|
+| `stub` | Testing without OCR | Free | N/A |
+| `tesseract` | Development, simple cases | Free | Good |
+| `kiri` | Khmer text (offline) | Free | Excellent (Khmer) |
+| `gemini` | Complex math + Khmer | Paid | Excellent |
+| `mathpix` | Advanced math notation | Paid | Excellent (Math) |
+| `google` | General purpose (cloud) | Paid | Good |
+| `smart` | **Production (recommended)** | Mixed | Adaptive |
+| `ensemble:voting:*` | Maximum accuracy | Mixed | Highest |
+| `ensemble:fallback:*` | Cost-effective fallback | Mixed | Good |
+
+---
+
 ## Next Steps
 
-1. Choose and set up an OCR provider (start with Tesseract)
-2. Test with sample images containing Khmer math
-3. Update `.env` with your chosen provider
-4. Test the `/api/v1/math/vision` endpoint
-5. Integrate with Flutter mobile app camera flow
+1. **Choose and set up an OCR provider** (start with `smart` for automatic)
+2. **Test with sample images** containing Khmer math
+3. **Benchmark on your dataset** using evaluation tools
+4. **Enable caching** for production deployment
+5. **Monitor performance** and adjust configuration as needed
+6. **Integrate with Flutter** mobile app camera flow
 
 For questions or issues, refer to the main README.md or the provider's documentation.
+
+## Additional Resources
+
+- **Main Documentation**: `README.md`
+- **API Reference**: `docs/API_CONTRACT.md`
+- **Code Examples**: `tests/test_vision_*.py`
+- **Evaluation Scripts**: `app/core/vision/evaluation.py`
+- **Caching Guide**: `app/core/vision/cache.py`
+
+---
+
+**Last Updated**: October 2026
+**Version**: 2.0 (Enhanced OCR Capabilities)
