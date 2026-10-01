@@ -309,3 +309,38 @@ def test_polynomial_verification_works():
             body = response.json()
             assert body["success"] is True
             assert body["data"]["is_verified"] == should_verify, f"Verification failed for: {question}"
+
+
+def test_polynomial_expansion_textbook_step_by_step():
+    """Test pedagogical step-by-step expansion matching Cambodian textbook standards:
+    A = (k + 4)(k^2 - 4k + 1)
+      Step 1: Original expression
+      Step 2: Distributive property: k(k^2 - 4k + 1) + 4(k^2 - 4k + 1)
+      Step 3: Expanded terms: k^3 - 4k^2 + k + 4k^2 - 16k + 4
+      Step 4: Combined like terms: k^3 - 15k + 4
+    """
+    with TestClient(app) as client:
+        # Case A: Named assignment
+        res = client.post(
+            "/api/v1/math/solve",
+            json={"language": "km", "question": "A = (k+4)(k^2 - 4k + 1)"},
+        )
+        assert res.status_code == 200
+        data = res.json()["data"]
+        assert data["problem_type"] == "factored_expression"
+        assert data["variable"] == "A"
+        assert "k**3 - 15*k + 4" in data["answer"] or "k^3" in data["answer"]
+        assert len(data["steps"]) == 4
+        assert "លក្ខណៈបំបែក" in data["steps"][1]["description_km"]
+        assert "គុណពន្លាត" in data["steps"][2]["description_km"]
+        assert "បង្រួមតួដូចគ្នា" in data["steps"][3]["description_km"]
+
+        # Case B: Without named assignment
+        res2 = client.post(
+            "/api/v1/math/solve",
+            json={"language": "km", "question": "(x+3)(x^2 + 4x - 3)"},
+        )
+        assert res2.status_code == 200
+        data2 = res2.json()["data"]
+        assert len(data2["steps"]) == 4
+        assert "7*x**2" in data2["answer"] or "7x^2" in data2["answer"]

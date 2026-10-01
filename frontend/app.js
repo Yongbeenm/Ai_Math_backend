@@ -6,8 +6,42 @@ document.addEventListener('DOMContentLoaded', () => {
   // Elements: Tabs
   const tabTypingBtn = document.getElementById('tab-typing-btn');
   const tabVisionBtn = document.getElementById('tab-vision-btn');
+  const tabWorksheetBtn = document.getElementById('tab-worksheet-btn');
   const tabTyping = document.getElementById('tab-typing');
   const tabVision = document.getElementById('tab-vision');
+  const tabWorksheet = document.getElementById('tab-worksheet');
+  const btnGotoWorksheet = document.getElementById('btn-goto-worksheet');
+
+  // Solution View Containers (Single Formula vs Full Worksheet)
+  const singleSolutionView = document.getElementById('single-solution-view');
+  const worksheetSolutionView = document.getElementById('worksheet-solution-view');
+
+  // Elements: Worksheet Pipeline Dropzone & Controls
+  const worksheetDropzone = document.getElementById('worksheet-dropzone');
+  const worksheetFileInput = document.getElementById('worksheet-file-input');
+  const worksheetDropzoneEmpty = document.getElementById('worksheet-dropzone-empty');
+  const worksheetDropzonePreview = document.getElementById('worksheet-dropzone-preview');
+  const worksheetPreviewImage = document.getElementById('worksheet-preview-image');
+  const worksheetRemoveBtn = document.getElementById('worksheet-remove-btn');
+  const worksheetAnalyzeBtn = document.getElementById('worksheet-analyze-btn');
+  const worksheetSampleButtons = document.querySelectorAll('[data-worksheet-sample]');
+
+  // Elements: Worksheet Solution View
+  const wsBadgeStatus = document.getElementById('ws-badge-status');
+  const wsBadgeTotal = document.getElementById('ws-badge-total');
+  const wsBadgeSolved = document.getElementById('ws-badge-solved');
+  const wsBadgeConf = document.getElementById('ws-badge-conf');
+  const wsInstructionCard = document.getElementById('ws-instruction-card');
+  const wsInstructionText = document.getElementById('ws-instruction-text');
+  const wsInstructionType = document.getElementById('ws-instruction-type');
+  const wsContextCard = document.getElementById('ws-context-card');
+  const wsContextVariables = document.getElementById('ws-context-variables');
+  const wsProblemsCount = document.getElementById('ws-problems-count');
+  const wsProblemsContainer = document.getElementById('ws-problems-container');
+  const wsRawOcrText = document.getElementById('ws-raw-ocr-text');
+
+  // State: Worksheet Image File
+  let worksheetImageFile = null;
 
   // Elements: Typing Tab & Live Math Preview
   const questionInput = document.getElementById('question-input');
@@ -51,6 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const heroAnswer = document.getElementById('hero-answer');
   const stepsList = document.getElementById('steps-list');
 
+  // Lesson Curriculum Banner elements
+  const lessonCurriculumBanner = document.getElementById('lesson-curriculum-banner');
+  const lessonChapterBadge = document.getElementById('lesson-chapter-badge');
+  const lessonNameBadge = document.getElementById('lesson-name-badge');
+  const lessonMethodBadge = document.getElementById('lesson-method-badge');
+  const lessonFormulaPill = document.getElementById('lesson-formula-pill');
+  const lessonFormulaContent = document.getElementById('lesson-formula-content');
+
   // OCR Info Banner elements
   const ocrInfoBanner = document.getElementById('ocr-info-banner');
   const ocrDetectedText = document.getElementById('ocr-detected-text');
@@ -81,23 +123,114 @@ document.addEventListener('DOMContentLoaded', () => {
   let cropStartX = 0;
   let cropStartY = 0;
 
-  // ---------------- KaTeX Rendering Helpers ----------------
+  // ---------------- KaTeX Formatting & Rendering Helpers ----------------
+  function formatMathForKaTeX(raw) {
+    if (raw === undefined || raw === null) return '';
+    let s = String(raw).trim();
+    if (!s) return '';
+
+    // Strip enclosing math delimiters if present
+    if (s.startsWith('$$') && s.endsWith('$$')) {
+      s = s.slice(2, -2).trim();
+    } else if (s.startsWith('$') && s.endsWith('$')) {
+      s = s.slice(1, -1).trim();
+    }
+
+    // 1. Simplify SymPy interval representations
+    // (-oo < x) & (x < 5) -> x < 5
+    s = s.replace(/\(-oo\s*<\s*([a-zA-Z])\)\s*&\s*\(\1\s*<\s*([^)]+)\)/g, '$1 < $2');
+    // (a < x) & (x < oo) -> a < x
+    s = s.replace(/\(([^)]+)\s*<\s*([a-zA-Z])\)\s*&\s*\(\2\s*<\s*oo\)/g, '$1 < $2');
+    // (a < x) & (x < b) -> a < x < b
+    s = s.replace(/\(([^)]+)\s*<\s*([a-zA-Z])\)\s*&\s*\(\2\s*<\s*([^)]+)\)/g, '$1 < $2 < $3');
+
+    // Replace infinity and logical operators
+    s = s.replace(/-oo\b/g, '-\\infty');
+    s = s.replace(/\boo\b/g, '\\infty');
+    s = s.replace(/\s*&\s*/g, ' \\text{ and } ');
+    s = s.replace(/\s*\|\s*/g, ' \\text{ or } ');
+
+    // 2. Simple numeric fractions like -1/4 or 5/4
+    s = s.replace(/^-(\d+)\/(\d+)$/, '-\\frac{$1}{$2}');
+    s = s.replace(/^(\d+)\/(\d+)$/, '\\frac{$1}{$2}');
+
+    // 3. Powers: replace ** with ^{...}
+    let prev;
+    let iterations = 0;
+    while (s.includes('**') && iterations < 10) {
+      iterations++;
+      prev = s;
+      s = s.replace(/(\((?:[^()]+|\([^()]*\))*\)|[a-zA-Z0-9_\\]+|\{[^{}]+\})\s*\*\*\s*(\((?:[^()]+|\([^()]*\))*\)|-?[a-zA-Z0-9_\\]+|\{[^{}]+\})/g, (match, base, exp) => {
+        let cleanExp = exp;
+        if (cleanExp.startsWith('(') && cleanExp.endsWith(')')) {
+          cleanExp = cleanExp.slice(1, -1).trim();
+        }
+        return `${base}^{${cleanExp}}`;
+      });
+      if (s === prev) break;
+    }
+
+    // 4. Square roots: sqrt(...) -> \sqrt{...}
+    while (/\\?sqrt\(([^()]+)\)/.test(s)) {
+      s = s.replace(/\\?sqrt\(([^()]+)\)/g, '\\sqrt{$1}');
+    }
+
+    // 5. Clean up redundant coefficients like -1*4*k or 1*4*k
+    s = s.replace(/(^|[^a-zA-Z0-9_])1\s*\*\s*([a-zA-Z0-9_\\(])/g, '$1$2');
+
+    // 6. Multiplication cleanup (replacing * with implicit or LaTeX multiplication)
+    // Parentheses product: (...) * (...) -> (...)(...)
+    s = s.replace(/\)\s*\*\s*\(/g, ')(');
+
+    // Number * variable: 15*k -> 15k, 4*x -> 4x
+    s = s.replace(/(\d+)\s*\*\s*([a-zA-Z])/g, '$1$2');
+
+    // Number * paren: 4*(...) -> 4(...)
+    s = s.replace(/(\d+)\s*\*\s*\(/g, '$1(');
+
+    // Paren * var/number: (...)*x -> (...)x
+    s = s.replace(/\)\s*\*\s*([a-zA-Z\d])/g, ')$1');
+
+    // Var * paren: x*(...) -> x(...)
+    s = s.replace(/([a-zA-Z])\s*\*\s*\(/g, '$1(');
+
+    // Var * var: x*y -> xy
+    s = s.replace(/([a-zA-Z])\s*\*\s*([a-zA-Z])/g, '$1$2');
+
+    // Number * sqrt: 3*\sqrt{2} -> 3\sqrt{2}
+    s = s.replace(/(\d+)\s*\*\s*(\\sqrt)/g, '$1$2');
+
+    // Number * number: 4*5 -> 4 \cdot 5
+    s = s.replace(/(\d+)\s*\*\s*(\d+)/g, '$1 \\cdot $2');
+
+    // Any remaining standalone * -> \cdot
+    s = s.replace(/\s*\*\s*/g, ' \\cdot ');
+
+    // 7. Relational operators
+    s = s.replace(/<=/g, ' \\le ');
+    s = s.replace(/>=/g, ' \\ge ');
+    s = s.replace(/!=/g, ' \\ne ');
+
+    // 8. Comma-separated lists of roots: e.g. 2, 3 -> 2, \; 3
+    s = s.replace(/,\s*/g, ', \\; ');
+
+    // 9. Arrow operators
+    s = s.replace(/\s*->\s*/g, ' \\rightarrow ');
+    s = s.replace(/\s*→\s*/g, ' \\rightarrow ');
+
+    return s;
+  }
+
   function renderKaTeX(element, latexStr, displayMode = false) {
     if (!element || latexStr === undefined || latexStr === null) return;
-    const str = String(latexStr).trim();
-    if (!str) {
+    const clean = formatMathForKaTeX(latexStr);
+    if (!clean) {
       element.innerHTML = '';
       return;
     }
 
     if (window.katex) {
       try {
-        let clean = str;
-        if (clean.startsWith('$$') && clean.endsWith('$$')) {
-          clean = clean.slice(2, -2).trim();
-        } else if (clean.startsWith('$') && clean.endsWith('$')) {
-          clean = clean.slice(1, -1).trim();
-        }
         window.katex.render(clean, element, {
           throwOnError: false,
           displayMode: displayMode,
@@ -108,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('KaTeX rendering error:', e);
       }
     }
-    element.textContent = str;
+    element.textContent = clean;
   }
 
   function renderMathIn(container) {
@@ -148,20 +281,31 @@ document.addEventListener('DOMContentLoaded', () => {
   checkHealth();
 
   // ---------------- Tab Switching ----------------
-  tabTypingBtn.addEventListener('click', () => {
-    tabTypingBtn.classList.add('active');
-    tabVisionBtn.classList.remove('active');
-    tabTyping.classList.add('active');
-    tabVision.classList.remove('active');
-  });
+  function switchTab(activeTab) {
+    [tabTypingBtn, tabVisionBtn, tabWorksheetBtn].forEach((btn) => {
+      if (btn) btn.classList.remove('active');
+    });
+    [tabTyping, tabVision, tabWorksheet].forEach((tab) => {
+      if (tab) tab.classList.remove('active');
+    });
 
-  tabVisionBtn.addEventListener('click', () => {
-    tabVisionBtn.classList.add('active');
-    tabTypingBtn.classList.remove('active');
-    tabVision.classList.add('active');
-    tabTyping.classList.remove('active');
-    setTimeout(syncCropCanvas, 150);
-  });
+    if (activeTab === 'typing') {
+      if (tabTypingBtn) tabTypingBtn.classList.add('active');
+      if (tabTyping) tabTyping.classList.add('active');
+    } else if (activeTab === 'vision') {
+      if (tabVisionBtn) tabVisionBtn.classList.add('active');
+      if (tabVision) tabVision.classList.add('active');
+      setTimeout(syncCropCanvas, 150);
+    } else if (activeTab === 'worksheet') {
+      if (tabWorksheetBtn) tabWorksheetBtn.classList.add('active');
+      if (tabWorksheet) tabWorksheet.classList.add('active');
+    }
+  }
+
+  if (tabTypingBtn) tabTypingBtn.addEventListener('click', () => switchTab('typing'));
+  if (tabVisionBtn) tabVisionBtn.addEventListener('click', () => switchTab('vision'));
+  if (tabWorksheetBtn) tabWorksheetBtn.addEventListener('click', () => switchTab('worksheet'));
+  if (btnGotoWorksheet) btnGotoWorksheet.addEventListener('click', () => switchTab('worksheet'));
 
   // ---------------- Live Math Preview & Typing ----------------
   function updateLivePreview() {
@@ -517,7 +661,24 @@ document.addEventListener('DOMContentLoaded', () => {
           pendingFallbackMath = (result.data && result.data.ocr_detected_text) ? result.data.ocr_detected_text : '4/3 + 2/4';
           showError(errorMsg, true);
         } else {
-          showError(errorMsg, false);
+          // Extract detected text if available from API response
+          const detectedMatch = errorMsg.match(/OCR detected '([^']+)'/);
+          const extractedLatex = result.data?.ocr_detected_text || (detectedMatch ? detectedMatch[1] : '');
+
+          if (extractedLatex) {
+            pendingFallbackMath = extractedLatex;
+            if (ocrLatexCard && ocrLatexInput) {
+              ocrLatexCard.classList.remove('hidden');
+              ocrLatexInput.value = extractedLatex;
+            }
+            errorMsg = `⚠️ មិនអាចបម្លែង ឬគណនារូបមន្តដោយស្វ័យប្រវត្តបានទេ\n\n` +
+                       `🔍 អត្ថបទ LaTeX ស្រង់បាន៖ ${extractedLatex}\n\n` +
+                       `💡 សម្គាល់៖ ម៉ូឌែល Pix2Tex ត្រូវបានបង្វឹកលើរូបមន្តពុម្ពកុំព្យូទ័រ (Printed LaTeX) ដូច្នេះអក្សរសរសេរដោយដៃ (Handwritten Math) អាចបង្កឱ្យមាននិមិត្តសញ្ញាខុសឆ្គង។\n\n` +
+                       `👉 អ្នកអាចកែសម្រួលរូបមន្តនៅក្នុងប្រអប់ខាងលើ រួចចុច "ដោះស្រាយ" ឬចុចប៊ូតុងខាងក្រោមដើម្បីផ្ទេរទៅផ្ទាំងសរសេរដោយដៃ (Manual Typing)។`;
+            showError(errorMsg, true);
+          } else {
+            showError(errorMsg, false);
+          }
         }
       }
     } catch (err) {
@@ -543,6 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSolveEditedLatex.addEventListener('click', async () => {
       if (!ocrLatexInput || !ocrLatexInput.value.trim()) return;
       const editedVal = ocrLatexInput.value.trim();
+      switchTab('typing');
       questionInput.value = editedVal;
       updateLivePreview();
       await solveManualMath();
@@ -552,22 +714,375 @@ document.addEventListener('DOMContentLoaded', () => {
   // Action button to switch directly to manual solve
   if (btnErrorSwitchManual) {
     btnErrorSwitchManual.addEventListener('click', () => {
-      tabTypingBtn.click();
+      switchTab('typing');
       if (pendingFallbackMath) {
         questionInput.value = pendingFallbackMath;
         updateLivePreview();
       }
-      solveManualMath();
     });
   }
 
+  // ---------------- Worksheet Upload & Handling ----------------
+  function setWorksheetImage(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    worksheetImageFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (worksheetPreviewImage) worksheetPreviewImage.src = e.target.result;
+      if (worksheetDropzoneEmpty) worksheetDropzoneEmpty.classList.add('hidden');
+      if (worksheetDropzonePreview) worksheetDropzonePreview.classList.remove('hidden');
+      if (worksheetAnalyzeBtn) worksheetAnalyzeBtn.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetWorksheetImage() {
+    worksheetImageFile = null;
+    if (worksheetFileInput) worksheetFileInput.value = '';
+    if (worksheetPreviewImage) worksheetPreviewImage.src = '';
+    if (worksheetDropzonePreview) worksheetDropzonePreview.classList.add('hidden');
+    if (worksheetDropzoneEmpty) worksheetDropzoneEmpty.classList.remove('hidden');
+    if (worksheetAnalyzeBtn) worksheetAnalyzeBtn.disabled = true;
+  }
+
+  if (worksheetDropzone) {
+    worksheetDropzone.addEventListener('click', (e) => {
+      if (e.target !== worksheetRemoveBtn && !worksheetRemoveBtn.contains(e.target)) {
+        if (worksheetFileInput) worksheetFileInput.click();
+      }
+    });
+
+    worksheetDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      worksheetDropzone.classList.add('dragover');
+    });
+
+    worksheetDropzone.addEventListener('dragleave', () => {
+      worksheetDropzone.classList.remove('dragover');
+    });
+
+    worksheetDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      worksheetDropzone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        setWorksheetImage(files[0]);
+      }
+    });
+  }
+
+  if (worksheetFileInput) {
+    worksheetFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        setWorksheetImage(e.target.files[0]);
+      }
+    });
+  }
+
+  if (worksheetRemoveBtn) {
+    worksheetRemoveBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetWorksheetImage();
+    });
+  }
+
+  worksheetSampleButtons.forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const samplePath = btn.dataset.worksheetSample;
+      if (!samplePath) return;
+      try {
+        const res = await fetch(samplePath);
+        const blob = await res.blob();
+        const filename = samplePath.split('/').pop() || 'worksheet_sample.png';
+        const file = new File([blob], filename, { type: blob.type || 'image/png' });
+        setWorksheetImage(file);
+      } catch (err) {
+        console.error('Failed to load sample worksheet:', err);
+      }
+    });
+  });
+
+  if (worksheetAnalyzeBtn) {
+    worksheetAnalyzeBtn.addEventListener('click', analyzeWorksheet);
+  }
+
+  // ---------------- Process Full Worksheet ----------------
+  async function analyzeWorksheet() {
+    if (!worksheetImageFile) return;
+
+    showLoading(
+      'កំពុងដំណើរការវិភាគសន្លឹកកិច្ចការពេញលេញ...',
+      'Kiri OCR → Exercise Structure → Context Propagation → SymPy Solving'
+    );
+
+    const formData = new FormData();
+    formData.append('image', worksheetImageFile, worksheetImageFile.name || 'worksheet.png');
+
+    try {
+      const response = await fetch('/api/v1/worksheets/process', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        renderWorksheetSolution(result.data);
+        loadHistory();
+      } else {
+        const errorMsg = result.error || 'បរាជ័យក្នុងការវិភាគសន្លឹកកិច្ចការ (Worksheet processing failed)';
+        showError(errorMsg, false);
+      }
+    } catch (err) {
+      showError('កំហុសក្នុងការតភ្ជាប់ Worksheet API: ' + err.message, false);
+    }
+  }
+
+  // ---------------- Render Full Worksheet Solution ----------------
+  function renderWorksheetSolution(data) {
+    solutionEmpty.classList.add('hidden');
+    solutionLoading.classList.add('hidden');
+    solutionError.classList.add('hidden');
+    solutionContent.classList.remove('hidden');
+
+    if (singleSolutionView) singleSolutionView.classList.add('hidden');
+    if (worksheetSolutionView) worksheetSolutionView.classList.remove('hidden');
+
+    const solutions = data.solutions || [];
+    const sections = (data.exercise && data.exercise.sections) ? data.exercise.sections : [];
+    const primarySection = sections.length > 0 ? sections[0] : null;
+
+    // Header Statistics
+    const totalCount = (data.statistics && data.statistics.total_problems) || solutions.length;
+    const solvedCount = solutions.filter(s => s.answer !== null && s.answer !== undefined).length;
+    const confVal = Math.round(((data.ocr && data.ocr.confidence) || 0.95) * 100);
+
+    if (wsBadgeTotal) wsBadgeTotal.textContent = `${totalCount} លំហាត់ (${totalCount} Problems)`;
+    if (wsBadgeSolved) wsBadgeSolved.textContent = `${solvedCount} បានដោះស្រាយ (${solvedCount} Solved)`;
+    if (wsBadgeConf) wsBadgeConf.textContent = `Confidence: ${confVal}%`;
+
+    // 1. Detected Instruction Card
+    const instructionObj = primarySection ? primarySection.instruction : null;
+    if (instructionObj && instructionObj.text) {
+      if (wsInstructionCard) wsInstructionCard.classList.remove('hidden');
+      if (wsInstructionText) {
+        wsInstructionText.innerHTML = '';
+        const textSpan = document.createElement('span');
+        textSpan.textContent = instructionObj.text;
+        wsInstructionText.appendChild(textSpan);
+        renderMathIn(wsInstructionText);
+      }
+      const action = instructionObj.type || 'calculate';
+      if (wsInstructionType) wsInstructionType.textContent = action.toUpperCase();
+    } else {
+      if (wsInstructionCard) wsInstructionCard.classList.add('hidden');
+    }
+
+    // 2. Given Context Card (Shared Variables e.g. x = 2 - √3, y = 3 + √3)
+    const givenVars = primarySection ? (primarySection.given_variables || {}) : {};
+    const varKeys = Object.keys(givenVars);
+
+    if (varKeys.length > 0) {
+      if (wsContextCard) wsContextCard.classList.remove('hidden');
+      if (wsContextVariables) {
+        wsContextVariables.innerHTML = '';
+        varKeys.forEach((v) => {
+          const val = givenVars[v];
+          const pill = document.createElement('div');
+          pill.className = 'ws-context-pill';
+
+          const varLabel = document.createElement('span');
+          varLabel.className = 'ws-context-var';
+          varLabel.textContent = `${v} =`;
+
+          const valSpan = document.createElement('span');
+          valSpan.className = 'ws-context-val';
+          renderKaTeX(valSpan, String(val), false);
+
+          pill.appendChild(varLabel);
+          pill.appendChild(valSpan);
+          wsContextVariables.appendChild(pill);
+        });
+      }
+    } else {
+      if (wsContextCard) wsContextCard.classList.add('hidden');
+    }
+
+    // 3. Problems and Solutions List
+    if (wsProblemsCount) wsProblemsCount.textContent = `${solutions.length} Problems`;
+    if (wsProblemsContainer) {
+      wsProblemsContainer.innerHTML = '';
+
+      if (solutions.length === 0) {
+        wsProblemsContainer.innerHTML = `
+          <div class="empty-state" style="padding: 2rem;">
+            <p>រកមិនឃើញលំហាត់នៅក្នុងសន្លឹកកិច្ចការនេះទេ</p>
+          </div>
+        `;
+      } else {
+        solutions.forEach((prob, index) => {
+          const card = document.createElement('div');
+          card.className = 'ws-problem-card';
+
+          // Header: Label + Badges
+          const header = document.createElement('div');
+          header.className = 'ws-problem-header';
+
+          const labelBadge = document.createElement('span');
+          labelBadge.className = 'ws-problem-label-badge';
+          labelBadge.textContent = prob.label || `លំហាត់ ${index + 1}`;
+
+          const badgesGroup = document.createElement('div');
+          badgesGroup.className = 'ws-problem-badges';
+
+          const typeBadge = document.createElement('span');
+          typeBadge.className = 'badge badge-primary';
+          typeBadge.textContent = (prob.problem_type || 'Problem')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+          badgesGroup.appendChild(typeBadge);
+
+          if (prob.is_verified) {
+            const verifiedBadge = document.createElement('span');
+            verifiedBadge.className = 'badge badge-success';
+            verifiedBadge.innerHTML = `✓ ផ្ទៀងផ្ទាត់ (Verified)`;
+            badgesGroup.appendChild(verifiedBadge);
+          }
+
+          header.appendChild(labelBadge);
+          header.appendChild(badgesGroup);
+          card.appendChild(header);
+
+          // Expression Box (KaTeX)
+          const exprBox = document.createElement('div');
+          exprBox.className = 'ws-problem-expr-box';
+          const exprMath = document.createElement('div');
+          renderKaTeX(exprMath, prob.expression || '', true);
+          exprBox.appendChild(exprMath);
+          card.appendChild(exprBox);
+
+          // Problem Relationships (e.g. Depends on given values: x, y)
+          const rels = prob.relationships || [];
+          if (rels.length > 0) {
+            rels.forEach((rel) => {
+              const relBanner = document.createElement('div');
+              relBanner.className = 'ws-relationship-banner';
+              relBanner.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>${escapeHtml(rel)}</span>
+              `;
+              card.appendChild(relBanner);
+            });
+          }
+
+          // Solution Hero Box
+          const solutionBox = document.createElement('div');
+          solutionBox.className = 'ws-solution-box';
+
+          const solLeft = document.createElement('div');
+          solLeft.className = 'ws-solution-left';
+
+          const solTag = document.createElement('span');
+          solTag.className = 'ws-solution-tag';
+          solTag.textContent = 'ចម្លើយចុងក្រោយ (Final Answer):';
+
+          const solAnswer = document.createElement('div');
+          solAnswer.className = 'ws-solution-answer';
+          if (prob.answer) {
+            renderKaTeX(solAnswer, String(prob.answer), false);
+          } else if (prob.error) {
+            solAnswer.style.color = '#fda4af';
+            solAnswer.style.fontSize = '0.95rem';
+            solAnswer.textContent = prob.error;
+          } else {
+            solAnswer.style.color = '#94a3b8';
+            solAnswer.style.fontSize = '0.95rem';
+            solAnswer.textContent = 'មិនមានចម្លើយ (Unsolved)';
+          }
+
+          solLeft.appendChild(solTag);
+          solLeft.appendChild(solAnswer);
+          solutionBox.appendChild(solLeft);
+
+          // Steps Toggle & Steps
+          const steps = prob.steps || [];
+          if (steps.length > 0) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'ws-steps-toggle';
+            toggleBtn.innerHTML = `<span>ដំណាក់កាល (${steps.length} Steps)</span> ▾`;
+
+            const stepsWrapper = document.createElement('div');
+            stepsWrapper.className = 'ws-problem-steps';
+
+            steps.forEach((st) => {
+              const stepRow = document.createElement('div');
+              stepRow.className = 'ws-step-row';
+
+              const stepNum = document.createElement('div');
+              stepNum.className = 'ws-step-num';
+              stepNum.textContent = st.order || '•';
+
+              const stepBody = document.createElement('div');
+              stepBody.className = 'ws-step-body';
+
+              const stepDesc = document.createElement('div');
+              stepDesc.className = 'ws-step-desc';
+              stepDesc.textContent = st.description_km || st.description_en || '';
+              stepBody.appendChild(stepDesc);
+
+              if (st.expression) {
+                const stepExpr = document.createElement('div');
+                stepExpr.className = 'ws-step-expr';
+                renderKaTeX(stepExpr, st.expression, true);
+                stepBody.appendChild(stepExpr);
+              }
+
+              stepRow.appendChild(stepNum);
+              stepRow.appendChild(stepBody);
+              stepsWrapper.appendChild(stepRow);
+            });
+
+            toggleBtn.addEventListener('click', () => {
+              stepsWrapper.classList.toggle('hidden');
+              const isHidden = stepsWrapper.classList.contains('hidden');
+              toggleBtn.innerHTML = `<span>ដំណាក់កាល (${steps.length} Steps)</span> ${isHidden ? '▾' : '▴'}`;
+            });
+
+            solutionBox.appendChild(toggleBtn);
+            card.appendChild(solutionBox);
+            card.appendChild(stepsWrapper);
+          } else {
+            card.appendChild(solutionBox);
+          }
+
+          wsProblemsContainer.appendChild(card);
+        });
+      }
+    }
+
+    // 4. Raw Kiri OCR Text
+    if (wsRawOcrText) {
+      wsRawOcrText.textContent = (data.ocr && data.ocr.detected_text) || 'No text detected';
+    }
+  }
+
   // ---------------- Render Solution States ----------------
-  function showLoading() {
+  function showLoading(title, subtitle) {
     solutionEmpty.classList.add('hidden');
     solutionError.classList.add('hidden');
     solutionContent.classList.add('hidden');
     if (errorActions) errorActions.classList.add('hidden');
     solutionLoading.classList.remove('hidden');
+
+    const loadingTitle = document.querySelector('.loading-title');
+    const loadingSub = document.querySelector('.loading-subtitle');
+    if (loadingTitle) {
+      loadingTitle.textContent = title || 'កំពុងដំណើរការគណនា និងផ្ទៀងផ្ទាត់...';
+    }
+    if (loadingSub) {
+      loadingSub.textContent = subtitle || 'Solving symbolically with SymPy & verifying accuracy';
+    }
   }
 
   function showError(msg, showAction = false) {
@@ -592,6 +1107,10 @@ document.addEventListener('DOMContentLoaded', () => {
     solutionError.classList.add('hidden');
     solutionContent.classList.remove('hidden');
 
+    // Ensure single solution view is visible and worksheet view is hidden
+    if (singleSolutionView) singleSolutionView.classList.remove('hidden');
+    if (worksheetSolutionView) worksheetSolutionView.classList.add('hidden');
+
     // Format Problem Type label
     const typeLabel = (data.problem_type || 'math_problem')
       .replace(/_/g, ' ')
@@ -612,7 +1131,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hero variable and answer (Rendered with KaTeX)
     if (data.variable) {
-      heroVar.textContent = `${data.variable} = `;
+      const ansTrim = String(data.answer || '').trim();
+      if (!ansTrim.startsWith(`${data.variable} =`) && !ansTrim.startsWith(`${data.variable}=`)) {
+        heroVar.textContent = `${data.variable} = `;
+      } else {
+        heroVar.textContent = '';
+      }
     } else {
       heroVar.textContent = '';
     }
@@ -664,12 +1188,39 @@ document.addEventListener('DOMContentLoaded', () => {
       ocrInfoBanner.classList.add('hidden');
     }
 
-    // Steps list with KaTeX rendering
+    // Render Lesson Curriculum Banner
+    if (lessonCurriculumBanner) {
+      if (data.lesson_info) {
+        lessonCurriculumBanner.classList.remove('hidden');
+        if (lessonChapterBadge) {
+          lessonChapterBadge.textContent = `${data.lesson_info.chapter_km} (${data.lesson_info.chapter_en})`;
+        }
+        if (lessonNameBadge) {
+          lessonNameBadge.textContent = data.lesson_info.lesson_km || '';
+        }
+        if (lessonMethodBadge) {
+          lessonMethodBadge.textContent = data.lesson_info.method_km || '';
+        }
+        if (lessonFormulaPill && lessonFormulaContent) {
+          if (data.lesson_info.rule_formula) {
+            lessonFormulaPill.classList.remove('hidden');
+            lessonFormulaContent.innerHTML = '';
+            renderKaTeX(lessonFormulaContent, data.lesson_info.rule_formula, false);
+          } else {
+            lessonFormulaPill.classList.add('hidden');
+          }
+        }
+      } else {
+        lessonCurriculumBanner.classList.add('hidden');
+      }
+    }
+
+    // Steps list with KaTeX rendering & pedagogical annotations
     stepsList.innerHTML = '';
     if (data.steps && data.steps.length > 0) {
       data.steps.forEach((step) => {
         const stepCard = document.createElement('div');
-        stepCard.className = 'step-card';
+        stepCard.className = step.is_verification ? 'step-card step-card-verification' : 'step-card';
 
         const stepNumber = document.createElement('div');
         stepNumber.className = 'step-number';
@@ -678,18 +1229,63 @@ document.addEventListener('DOMContentLoaded', () => {
         const stepContent = document.createElement('div');
         stepContent.className = 'step-content';
 
+        // Step Header Row (Title + Verification Badge)
+        const headerRow = document.createElement('div');
+        headerRow.className = 'step-header-row';
+
         const titleKm = document.createElement('div');
         titleKm.className = 'step-title-km';
-        titleKm.textContent = step.description_km || '';
-        stepContent.appendChild(titleKm);
+        titleKm.textContent = step.title_km || step.description_km || '';
+        headerRow.appendChild(titleKm);
 
-        if (step.description_en) {
+        if (step.is_verification) {
+          const verifTag = document.createElement('span');
+          verifTag.className = 'step-verification-tag';
+          verifTag.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>ផ្ទៀងផ្ទាត់ (Verification)</span>
+          `;
+          headerRow.appendChild(verifTag);
+        }
+        stepContent.appendChild(headerRow);
+
+        // English Title / Description
+        const engText = step.title_en || step.description_en;
+        if (engText) {
           const titleEn = document.createElement('div');
           titleEn.className = 'step-title-en';
-          titleEn.textContent = step.description_en;
+          titleEn.textContent = engText;
           stepContent.appendChild(titleEn);
         }
 
+        // Pedagogical Rationale ("Why" this step is performed)
+        if (step.rationale_km) {
+          const whyBox = document.createElement('div');
+          whyBox.className = 'step-why-box';
+          whyBox.innerHTML = `
+            <div>
+              <span class="step-why-label">💡 ហេតុអ្វី (Why):</span>
+              <span class="step-why-text">${escapeHtml(step.rationale_km)}</span>
+            </div>
+            ${step.rationale_en ? `<div class="step-why-en">${escapeHtml(step.rationale_en)}</div>` : ''}
+          `;
+          stepContent.appendChild(whyBox);
+        }
+
+        // Specific Formula/Rule for this step
+        if (step.rule_formula) {
+          const rulePill = document.createElement('div');
+          rulePill.className = 'step-rule-pill';
+          const ruleIcon = document.createElement('span');
+          ruleIcon.textContent = '📌 រូបមន្ត: ';
+          const ruleMath = document.createElement('span');
+          renderKaTeX(ruleMath, step.rule_formula, false);
+          rulePill.appendChild(ruleIcon);
+          rulePill.appendChild(ruleMath);
+          stepContent.appendChild(rulePill);
+        }
+
+        // Mathematical Expression
         if (step.expression) {
           const exprBox = document.createElement('div');
           exprBox.className = 'step-expression';

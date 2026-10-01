@@ -134,8 +134,10 @@ class ProblemClassifier:
             for factor in expr.as_ordered_factors():
                 if hasattr(factor, "exp") or isinstance(factor, sympy.Pow):
                     chars.has_exponents = True
-                if isinstance(factor, (sqrt, sympy.root)):
-                    chars.has_radicals = True
+                    # Check if it's a radical (fractional exponent)
+                    if isinstance(factor, sympy.Pow) and hasattr(factor, "exp"):
+                        if isinstance(factor.exp, Rational) and factor.exp.q != 1:
+                            chars.has_radicals = True
 
         # Detect absolute value
         if expr.has(Abs):
@@ -181,6 +183,11 @@ class ProblemClassifier:
         # Priority 3: Check if it's an equation
         if not parsed.is_equation:
             return self._classify_expression(expr, parsed, chars)
+
+        # Priority 3.5: Check for named expression assignment (e.g. A = (k+4)(k^2-4k+1))
+        if isinstance(expr, Eq):
+            if isinstance(expr.lhs, Symbol) and expr.lhs.name.isupper() and expr.lhs not in expr.rhs.free_symbols:
+                return self._classify_expression(expr.rhs, parsed, chars)
 
         # Priority 4: Equations
         return self._classify_equation(expr, parsed, chars)

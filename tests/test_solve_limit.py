@@ -192,3 +192,130 @@ class TestLimitServiceAndAPI:
         data = process_question(raw)
         assert data.problem_type == "calculus_limit"
         assert data.answer == "1/2"
+
+    def test_limit_equation_with_verification_step(self):
+        """Equation with limit and RHS: lim_{x -> 2} sqrt(x) = sqrt(2)."""
+        raw = r"\lim_{x \to 2} \sqrt{x} = \sqrt{2}"
+        data = process_question(raw)
+        assert data.problem_type == "calculus_limit"
+        assert data.answer == "sqrt(2)"
+        assert data.variable == "x"
+        assert data.is_verified is True
+        assert data.lesson_info is not None
+        assert data.lesson_info["method_id"] == "method_limit_direct_substitution"
+        assert "ជំនួសតម្លៃផ្ទាល់" in data.lesson_info["method_km"]
+
+        # Check pedagogical metadata on steps
+        step_titles = [s.title_km for s in data.steps if s.title_km]
+        assert "កំណត់កន្សោមលីមីតដើម" in step_titles
+        assert "ជំនួសតម្លៃផ្ទាល់ (អនុគមន៍ជាប់)" in step_titles
+        assert "គណនាតម្លៃលីមីតចុងក្រោយ" in step_titles
+        assert "ផ្ទៀងផ្ទាត់សមភាពនៃលីមីត" in step_titles
+
+        # Check verification step exists and is marked is_verification=True
+        verif_steps = [s for s in data.steps if s.is_verification]
+        assert len(verif_steps) == 1
+        assert "ពិត" in verif_steps[0].description_km
+        assert "sqrt{2}" in verif_steps[0].expression
+
+    def test_limit_indeterminate_conjugate_method(self):
+        """Indeterminate radical 0/0 limit uses conjugate method."""
+        raw = r"\lim_{x \to 4} \frac{\sqrt{x} - 2}{x - 4}"
+        data = process_question(raw)
+        assert data.problem_type == "calculus_limit"
+        assert data.answer == "1/4"
+        assert data.lesson_info is not None
+        assert data.lesson_info["method_id"] == "method_limit_conjugate"
+        step_titles = [s.title_km for s in data.steps if s.title_km]
+        assert "គុណកន្សោមឆ្លាស់នៃរ៉ាឌីកាល់" in step_titles
+
+    def test_telegram_cloud_photo_ocr_and_pedagogical_solution(self):
+        """Test OCR and pedagogical solving for telegram-cloud-photo-size-5-6192530396688356273-x.jpg."""
+        import os
+        from app.ocr.extraction.pix2tex_engine import Pix2TexVisionEngine
+        from app.services.vision_service import VisionService
+
+        img_path = "training/test_exercises/telegram-cloud-photo-size-5-6192530396688356273-x.jpg"
+        if not os.path.exists(img_path):
+            return
+
+        with open(img_path, "rb") as f:
+            img_bytes = f.read()
+
+        engine = Pix2TexVisionEngine()
+        vision_res = engine.detect(img_bytes)
+        assert vision_res.detected_text is not None
+        assert r"\lim" in vision_res.detected_text
+        assert r"\sqrt{x}" in vision_res.detected_text
+        assert r"\sqrt{2}" in vision_res.detected_text
+
+        service = VisionService(vision_engine=engine)
+        res = service.process_image(img_bytes)
+        assert res["answer"] == "sqrt(2)"
+        assert res["variable"] == "x"
+        assert res["is_verified"] is True
+        assert res["lesson_info"]["method_id"] == "method_limit_direct_substitution"
+        assert len(res["steps"]) >= 3
+
+    def test_telegram_cloud_photo_parametric_limit_ocr_and_solution(self):
+        """Test OCR and pedagogical solving for telegram-cloud-photo-size-5-6192530396688356283-m.jpg."""
+        import os
+        from app.ocr.extraction.pix2tex_engine import Pix2TexVisionEngine
+        from app.services.vision_service import VisionService
+
+        img_path = "training/test_exercises/telegram-cloud-photo-size-5-6192530396688356283-m.jpg"
+        if not os.path.exists(img_path):
+            return
+
+        with open(img_path, "rb") as f:
+            img_bytes = f.read()
+
+        engine = Pix2TexVisionEngine()
+        vision_res = engine.detect(img_bytes)
+        assert vision_res.detected_text is not None
+        assert r"\lim" in vision_res.detected_text
+        assert "x-1" in vision_res.detected_text
+
+        service = VisionService(vision_engine=engine)
+        res = service.process_image(img_bytes)
+        assert res["variable"] == "x"
+        assert len(res["steps"]) >= 3
+        # Check zero-denominator explanation step exists
+        step_titles = [s.get("title_km") for s in res["steps"]]
+        assert "ពិនិត្យការជំនួសផ្ទាល់ (ភាគបែងស្មើសូន្យ)" in step_titles
+
+    def test_telegram_cloud_photo_radicand_limit_ocr_and_solution(self):
+        """Test OCR and pedagogical solving for telegram-cloud-photo-size-5-6192530396688356287-x.jpg."""
+        import os
+        from app.ocr.extraction.pix2tex_engine import Pix2TexVisionEngine
+        from app.services.vision_service import VisionService
+
+        img_path = "training/test_exercises/telegram-cloud-photo-size-5-6192530396688356287-x.jpg"
+        if not os.path.exists(img_path):
+            return
+
+        with open(img_path, "rb") as f:
+            img_bytes = f.read()
+
+        engine = Pix2TexVisionEngine()
+        vision_res = engine.detect(img_bytes)
+        assert vision_res.detected_text is not None
+        assert r"\lim" in vision_res.detected_text
+        assert r"\sqrt[3]" in vision_res.detected_text
+        assert "-7x+1" in vision_res.detected_text or "-7x" in vision_res.detected_text
+        assert vision_res.exercise_metadata is not None
+        assert len(vision_res.exercise_metadata["sub_exercises"]) == 1
+        assert vision_res.exercise_metadata["sub_exercises"][0]["label"] == "ក"
+
+        service = VisionService(vision_engine=engine)
+        res = service.process_image(img_bytes)
+        assert res["variable"] == "x"
+        assert res["is_verified"] is True
+        assert res["answer"] == "-2**(2/3)/3"
+        assert len(res["steps"]) >= 3
+        step_titles = [s.get("title_km") for s in res["steps"]]
+        assert "កំណត់កន្សោមលីមីតដើម" in step_titles
+        assert "ជំនួសតម្លៃផ្ទាល់ (អនុគមន៍ជាប់)" in step_titles
+        assert "គណនាតម្លៃលីមីតចុងក្រោយ" in step_titles
+
+

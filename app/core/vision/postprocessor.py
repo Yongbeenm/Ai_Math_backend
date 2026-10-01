@@ -119,7 +119,22 @@ def sanitize_ocr_math_text(raw_text: str) -> str:
     # 13. Fix horizontal spaces between numeric coefficients and variable: '2 x' -> '2x'
     text = re.sub(r"(?<=\d)[ \t]+([a-zA-Z])(?![a-zA-Z\)\.\:៖])", r"\1", text)
 
-    # 14. Clean multiple spaces
+    # 14. Fix Kiri OCR character duplication errors
+    # Common pattern: single digits/chars duplicated (99 -> 9, qq -> q, aatt -> at)
+    # Be conservative: only fix when duplication is clearly wrong
+    
+    # Fix excessive digit duplication in algebraic context (99x -> 9x, 111 -> 11)
+    # Only if followed by variable or operator (not pure numbers like year 1999)
+    text = re.sub(r'\b(\d)\1{2,}(?=[a-zA-Z+\-*/^=])', r'\1', text)
+    
+    # Fix doubled single lowercase letters before another letter or number (aatt -> at, qq -> q)
+    # Only in math context (coefficient or variable)
+    text = re.sub(r'([a-z])\1(?=[a-z\d^+\-*/=\s])', r'\1', text)
+    
+    # Fix 't' prefix before numbers (t81 -> 81, t27 -> 27) - common Kiri OCR error
+    text = re.sub(r'\bt(\d{2,})', r'\1', text)
+
+    # 15. Clean multiple spaces
     text = re.sub(r"[ \t]+", " ", text).strip()
 
     return text

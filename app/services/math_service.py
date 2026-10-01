@@ -78,6 +78,21 @@ class MathService:
             raise MathProcessingError(str(exc)) from exc
 
         problem_type = classify_problem(parsed)
+
+        # Context-aware refinement based on question phrasing
+        q_lower = normalized_text.lower()
+        if any(kw in q_lower for kw in ["ដាក់ជាផលគុណកត្តា", "ផលគុណកត្តា", "factor", "factorize"]):
+            if problem_type in (
+                "algebraic_expression",
+                "arithmetic_expression",
+                "expression_simplification",
+                "factored_expression",
+            ):
+                problem_type = "expression_factorization"
+        elif any(kw in q_lower for kw in ["ពន្លាត", "expand"]):
+            if problem_type in ("algebraic_expression", "factored_expression"):
+                problem_type = "expression_expansion"
+
         result = solve(parsed, problem_type)
 
         return SolveData(
@@ -89,6 +104,7 @@ class MathService:
             answer=result.answer,
             is_verified=result.is_verified,
             steps=result.steps,
+            lesson_info=result.lesson_info or result.metadata.get("lesson_info"),
         )
 
 

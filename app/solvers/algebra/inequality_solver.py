@@ -119,7 +119,7 @@ class InequalitySolver(BaseSolver):
                     order=1,
                     description_km="ដោះស្រាយអសមីការ៖",
                     description_en="Solve the inequality:",
-                    expression=f"{expr}  →  {answer_str}",
+                    expression=f"{sympy.latex(expr)}  \\rightarrow  {answer_str}",
                 )
             ]
 

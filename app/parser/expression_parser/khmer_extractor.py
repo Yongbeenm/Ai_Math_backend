@@ -15,7 +15,7 @@ import re
 # A run of characters that looks like math: digits, letters (variables),
 # operators, parentheses, decimal points, '=', inequality signs, whitespace,
 # and LaTeX syntax (backslashes, braces, underscores).
-_EXPRESSION_RUN = re.compile(r"[0-9a-zA-Z.\+\-\*/\^=()\s<>=≤≥\\{}_]{3,}")
+_EXPRESSION_RUN = re.compile(r"[0-9a-zA-Z.\+\-\*/\^=()\[\]\s<>=≤≥\\{}_]{3,}")
 
 # Two-or-more consecutive Latin letters that are NOT part of a LaTeX command
 _MULTI_LETTER_WORD = re.compile(r"(?<!\\)\b[a-zA-Z]{2,}\b")

@@ -116,7 +116,7 @@ class EquationSolver(BaseSolver):
                     order=1,
                     description_km="ដោះស្រាយសមីការ៖",
                     description_en="Solve the equation:",
-                    expression=f"{eq}  →  {symbol} = {', '.join(str(s) for s in solutions)}",
+                    expression=f"{sympy.latex(eq)}  \\rightarrow  {symbol} = {', '.join(sympy.latex(s) for s in solutions)}",
                 )
             ]
 

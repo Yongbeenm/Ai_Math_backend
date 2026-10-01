@@ -27,6 +27,7 @@ class SolveResult:
     is_verified: bool
     steps: list[SolutionStep] = field(default_factory=list)
     metadata: dict[str, any] = field(default_factory=dict)
+    lesson_info: dict[str, any] | None = None
 
     def __post_init__(self):
         """Ensure steps are valid SolutionStep instances."""

@@ -176,8 +176,9 @@ class RuleBasedIntentClassifier(IntentClassifier):
         if has_word_problem and has_numbers:
             return MathIntent.EVALUATE_EXPRESSION
 
-        # Priority 6: Any expression with numbers (fallback)
-        if has_numbers:
+        # Priority 6: Any expression with numbers or mathematical operators with variables
+        has_math_ops = bool(re.search(r"[+\-*/^()]", normalized_text))
+        if has_numbers or (has_math_ops and bool(re.search(r"[a-zA-Z]", normalized_text))):
             return MathIntent.EVALUATE_EXPRESSION
 
         return MathIntent.UNKNOWN

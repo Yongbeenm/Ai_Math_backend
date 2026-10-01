@@ -15,6 +15,14 @@ class SolutionStep(BaseModel):
     description_en: str | None = None
     expression: str | None = None
 
+    # Pedagogical explanation metadata ("What" & "Why")
+    title_km: str | None = None
+    title_en: str | None = None
+    rationale_km: str | None = None
+    rationale_en: str | None = None
+    rule_formula: str | None = None
+    is_verification: bool = False
+
     # Enhanced metadata for operation tracking
     operation: str | None = None  # Type of operation: "add", "subtract", etc.
     operands: list[str] = Field(default_factory=list)  # Values involved
@@ -33,6 +41,7 @@ class SolveData(BaseModel):
     answer: str | None = None
     is_verified: bool = False
     steps: list[SolutionStep] = Field(default_factory=list)
+    lesson_info: dict[str, Any] | None = None
 
 
 class APIResponse(BaseModel):

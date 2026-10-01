@@ -12,6 +12,7 @@ Features:
 Refactored from app/core/localization/ for better organization.
 """
 
+from app.explanation.engine import ExplanationEngine, get_explanation_engine
 from app.explanation.templates.templates import (
     ExplanationGenerator,
     NumberFormatter,
@@ -24,4 +25,6 @@ __all__ = [
     "get_explanation_generator",
     "generate_bilingual_step",
     "NumberFormatter",
+    "ExplanationEngine",
+    "get_explanation_engine",
 ]

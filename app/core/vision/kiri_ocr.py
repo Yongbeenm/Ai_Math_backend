@@ -51,7 +51,7 @@ class KiriVisionEngine(MathVisionEngine):
     def __init__(
         self,
         device: str = "cpu",
-        decode_method: str = "fast",
+        use_beam_search: bool = True,
         ocr_instance: Any | None = None,
     ):
         """
@@ -59,21 +59,21 @@ class KiriVisionEngine(MathVisionEngine):
 
         Args:
             device: Computing device ('cpu', 'mps' for Apple Silicon, or 'cuda')
-            decode_method: Decoding strategy ('fast', 'accurate', or 'beam')
+            use_beam_search: Whether to use beam search decoding (more accurate but slower)
             ocr_instance: Optional pre-initialized OCR instance (useful for dependency injection and testing)
         """
         if not KIRI_OCR_AVAILABLE and ocr_instance is None:
             raise ImportError("kiri-ocr is required. Install it with: pip install kiri-ocr")
 
         self.device = device
-        self.decode_method = decode_method
+        self.use_beam_search = use_beam_search
         self._ocr = ocr_instance
 
     @property
     def ocr(self) -> Any:
         """Lazy loader for the OCR model so startup is fast until first request."""
         if self._ocr is None:
-            self._ocr = OCR(device=self.device, decode_method=self.decode_method)
+            self._ocr = OCR(device=self.device, use_beam_search=self.use_beam_search)
         return self._ocr
 
     def detect(self, image_bytes: bytes) -> VisionResult:

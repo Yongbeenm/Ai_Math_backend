@@ -54,7 +54,7 @@ def _clean_latex_text(text: str) -> str:
     t = re.sub(
         r"^\s*(?:"
         r"\([a-zA-Z0-9\u1780-\u17a2]{1,2}\)[\.៖:]?"
-        r"|(?:[\\/](?:mathcal|mathbf|mathrm|text)\{[a-zA-Z0-9\u1780-\u17a2]+\}|[ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2})[\)\.៖:](?!\d)"
+        r"|(?:[\\/](?:tilde|bar|hat|mathcal|mathbf|mathrm|text)\{[^{}]*(?:\{[^{}]*\})*\}|[ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2})[\)\.៖:](?!\d)"
         r")\s*",
         "",
         t,

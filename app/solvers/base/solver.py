@@ -103,42 +103,127 @@ class ExpressionEvaluator(BaseSolver):
     - Simplification: "sqrt(16)" → "4"
     """
 
+    SUPPORTED_TYPES = (
+        "arithmetic_expression",
+        "algebraic_expression",
+        "factored_expression",
+        "expression_factorization",
+        "polynomial_factorization",
+        "expression_simplification",
+        "fraction_simplification",
+        "radical_simplification",
+        "expression_expansion",
+        "polynomial_expansion",
+    )
+
     def can_solve(self, problem_type: str) -> bool:
-        return problem_type in (
-            "arithmetic_expression",
-            "algebraic_expression",
-        )
+        return problem_type in self.SUPPORTED_TYPES
 
     def solve(self, parsed: ParsedMath, problem_type: str) -> SolveResult:
-        """Simplify and evaluate the expression."""
+        """Evaluate, simplify, expand, or factor the expression."""
         from app.api.schemas.responses import SolutionStep
 
         expr = parsed.sympy_expr
-        simplified = sympy.simplify(expr)
 
-        # Detect operation type from raw text
-        raw_text = parsed.raw_text.lower()
-        is_fraction_operation = "/" in raw_text or "(" in raw_text
+        variable = None
+        if parsed.raw_text and "=" in parsed.raw_text:
+            parts = parsed.raw_text.split("=", 1)
+            pot_var = parts[0].strip()
+            if len(pot_var) <= 2 and pot_var.replace("(", "").replace(")", "").isalpha():
+                variable = pot_var
+        if isinstance(expr, sympy.Eq) and isinstance(expr.lhs, sympy.Symbol):
+            if variable is None:
+                variable = str(expr.lhs)
+            expr = expr.rhs
 
-        if is_fraction_operation:
-            description_km = "គណនាប្រភាគ៖"
-            description_en = "Calculate the fraction:"
+        lesson_info = None
+
+        if problem_type in ("factored_expression", "expression_expansion", "polynomial_expansion"):
+            evaluated = sympy.expand(expr)
+            from app.explanation.engine import get_explanation_engine
+
+            engine = get_explanation_engine()
+            steps, lesson_info = engine.generate_explanation(
+                expr, problem_type=problem_type, raw_text=parsed.raw_text, symbol=None
+            )
+            if not steps:
+                generator = self._get_step_generator(problem_type)
+                if generator is not None and hasattr(generator, "generate"):
+                    steps = generator.generate(expr, symbol=None, raw_text=parsed.raw_text)
+                else:
+                    steps = [
+                        SolutionStep(
+                            order=1,
+                            description_km="គណនាផលគុណ និងពន្លាតកន្សោម៖",
+                            description_en="Calculate product and expand the expression:",
+                            expression=f"{sympy.latex(expr)} = {sympy.latex(evaluated)}",
+                        )
+                    ]
+        elif problem_type in ("expression_factorization", "polynomial_factorization"):
+            evaluated = sympy.factor(expr)
+            from app.explanation.engine import get_explanation_engine
+
+            engine = get_explanation_engine()
+            steps, lesson_info = engine.generate_explanation(
+                expr, problem_type=problem_type, raw_text=parsed.raw_text, symbol=None
+            )
+            if not steps:
+                steps = [
+                    SolutionStep(
+                        order=1,
+                        description_km="កន្សោមដើម៖",
+                        description_en="Original expression:",
+                        expression=sympy.latex(expr),
+                    ),
+                    SolutionStep(
+                        order=2,
+                        description_km="ដាក់ជាផលគុណកត្តា (បំបែកកត្តារួម ឬប្រើរូបមន្តស្មើភាព)៖",
+                        description_en="Factor into product (factoring out common terms or identities):",
+                        expression=f"= {sympy.latex(evaluated)}",
+                    ),
+                ]
+        elif problem_type in ("radical_simplification",):
+            evaluated = sympy.simplify(expr)
+            steps = [
+                SolutionStep(
+                    order=1,
+                    description_km="កន្សោមដើម៖",
+                    description_en="Original expression:",
+                    expression=sympy.latex(expr),
+                ),
+                SolutionStep(
+                    order=2,
+                    description_km="សម្រួលរ៉ាឌីកាល់ (ទាញកត្តាការេពេញចេញក្រៅ)៖",
+                    description_en="Simplify radical (extract perfect square factors):",
+                    expression=f"= {sympy.latex(evaluated)}",
+                ),
+            ]
         else:
-            description_km = "គណនាកន្សោម៖"
-            description_en = "Evaluate the expression:"
+            evaluated = sympy.simplify(expr)
+            raw_text = parsed.raw_text.lower()
+            is_fraction_operation = "/" in raw_text
+            if is_fraction_operation:
+                description_km = "គណនាប្រភាគ និងសម្រួល៖"
+                description_en = "Calculate and simplify the fraction:"
+            else:
+                description_km = "គណនាកន្សោម៖"
+                description_en = "Evaluate the expression:"
 
-        return SolveResult(
-            answer=str(simplified),
-            variable=None,
-            is_verified=True,
-            steps=[
+            steps = [
                 SolutionStep(
                     order=1,
                     description_km=description_km,
                     description_en=description_en,
-                    expression=f"{expr} = {simplified}",
+                    expression=f"{sympy.latex(expr)} = {sympy.latex(evaluated)}",
                 )
-            ],
+            ]
+
+        return SolveResult(
+            answer=str(evaluated),
+            variable=variable,
+            is_verified=True,
+            steps=steps,
+            lesson_info=lesson_info,
         )
 
 

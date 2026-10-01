@@ -10,22 +10,25 @@ from __future__ import annotations
 
 from app.reasoning.steps.base import StepGenerator
 from app.reasoning.steps.calculus_limit import LimitStepGenerator
+from app.reasoning.steps.expansion import ExpansionStepGenerator
 from app.reasoning.steps.inequality import LinearInequalityStepGenerator
 from app.reasoning.steps.linear import LinearStepGenerator
 from app.reasoning.steps.polynomial import PolynomialStepGenerator
 from app.reasoning.steps.quadratic import QuadraticStepGenerator
 from app.reasoning.steps.system import SystemStepGenerator
 
+_expansion_gen = ExpansionStepGenerator()
+
 _GENERATORS: dict[str, StepGenerator] = {
-    generator.problem_type: generator
-    for generator in [
-        LinearStepGenerator(),
-        QuadraticStepGenerator(),
-        PolynomialStepGenerator(),
-        SystemStepGenerator(),
-        LinearInequalityStepGenerator(),
-        LimitStepGenerator(),
-    ]
+    "linear_equation": LinearStepGenerator(),
+    "quadratic_equation": QuadraticStepGenerator(),
+    "polynomial_equation": PolynomialStepGenerator(),
+    "system_of_equations": SystemStepGenerator(),
+    "linear_inequality": LinearInequalityStepGenerator(),
+    "calculus_limit": LimitStepGenerator(),
+    "factored_expression": _expansion_gen,
+    "expression_expansion": _expansion_gen,
+    "polynomial_expansion": _expansion_gen,
 }
 
 

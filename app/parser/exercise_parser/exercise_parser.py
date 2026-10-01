@@ -71,8 +71,8 @@ _INSTRUCTION_RE = re.compile(
 _SUBITEM_RE = re.compile(
     r"(?i)(?:"
     r"(?:^|(?<=[\n,;៖:]))\s*\(([a-zA-Z]|[0-9]{1,2}|[\u1780-\u17a2]|[\u17e0-\u17e9]{1,2})\)\s*"
-    r"|(?:^|(?<=[\n,;៖:]))\s*(?:[\\/](?:mathcal|mathbf|mathrm|text)\{([a-zA-Z0-9\u1780-\u17a2]+)\}|([ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2}))[\)៖:]\s*"
-    r"|(?:^|(?<=[\n,;៖:\s]))\s*(?:[\\/](?:mathcal|mathbf|mathrm|text)\{([a-zA-Z0-9\u1780-\u17a2]+)\}|([ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2}))\.(?!\d)\s*"
+    r"|(?:^|(?<=[\n,;៖:]))\s*(?:[\\/](?:tilde|bar|hat|mathcal|mathbf|mathrm|text)\{([a-zA-Z0-9\u1780-\u17a2]+)\}|([ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2}))[\)៖:]\s*"
+    r"|(?:^|(?<=[\n,;៖:\s]))\s*(?:[\\/](?:tilde|bar|hat|mathcal|mathbf|mathrm|text)\{([a-zA-Z0-9\u1780-\u17a2]+)\}|([ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2}))\.(?!\d)\s*"
     r")"
 )
 
@@ -80,12 +80,12 @@ _SUBITEM_RE = re.compile(
 _LEADING_LABEL_RE = re.compile(
     r"^\s*(?:"
     r"\([a-zA-Z0-9\u1780-\u17a2]{1,2}\)[\.៖:]?"
-    r"|(?:[\\/](?:mathcal|mathbf|mathrm|text)\{[a-zA-Z0-9\u1780-\u17a2]+\}|[ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2})[\)\.៖:](?!\d)"
+    r"|(?:[\\/](?:tilde|bar|hat|mathcal|mathbf|mathrm|text)\{[^{}]*(?:\{[^{}]*\})*\}|[ក-អ]|[a-zA-Z]|[0-9]{1,2}|[\u17e0-\u17e9]{1,2})[\)\.៖:](?!\d)"
     r")\s*"
 )
 
 # Mathematical expression regex
-_EXPRESSION_RUN = re.compile(r"[0-9a-zA-Z.\+\-\*/\^=()\s<>=≤≥\\{}_]{3,}")
+_EXPRESSION_RUN = re.compile(r"[0-9a-zA-Z.\+\-\*/\^=()\[\]\s<>=≤≥\\{}_]{3,}")
 _MULTI_LETTER_WORD = re.compile(r"(?<!\\)\b[a-zA-Z]{2,}\b")
 
 # Math function and LaTeX names that must never be stripped as prose words
@@ -165,6 +165,11 @@ def _extract_single_math_expression(text: str) -> str | None:
 
     # Remove leading sub-item label prefix if any remains at start of string
     cleaned = _LEADING_LABEL_RE.sub("", cleaned)
+
+    # Clean LaTeX spacing tokens like \; \, \! \: \quad \qquad \hfill so they don't split candidate math runs
+    cleaned = re.sub(r"\\+([;,!:])", " ", cleaned)
+    cleaned = re.sub(r"\\(?:quad|qquad|hfill|vfill)", " ", cleaned)
+    cleaned = re.sub(r"\\[\s]+", " ", cleaned)
 
     candidates = _EXPRESSION_RUN.findall(cleaned)
     if not candidates:

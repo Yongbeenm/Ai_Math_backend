@@ -55,7 +55,11 @@
           </button>
           <button id="tab-vision-btn" class="tab-btn" data-tab="vision">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-            <span>ស្កេនរូបភាព (Math Vision OCR)</span>
+            <span>រូបមន្តទោល (Single Formula)</span>
+          </button>
+          <button id="tab-worksheet-btn" class="tab-btn tab-btn-highlight" data-tab="worksheet">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>សន្លឹកកិច្ចការ (Full Worksheet)</span>
           </button>
         </div>
 
@@ -139,6 +143,10 @@
                 <span class="pill-type">BacII Limit A</span>
                 <span>A = \lim_{x \to 3} \dots = \frac{22}{7}</span>
               </button>
+              <button type="button" class="preset-pill" data-example="\lim_{x \to 2} \frac{4(\sqrt{x+2} - 2)}{4 - x^2}">
+                <span class="pill-type">BacII Limit √</span>
+                <span>\lim_{x \to 2} \frac{4(\sqrt{x+2} - 2)}{4 - x^2}</span>
+              </button>
               <button type="button" class="preset-pill" data-example="B = \lim_{x \to 0} \frac{\sqrt{1+x} - \sqrt{1-x}}{\sin 3x}">
                 <span class="pill-type">BacII Limit B</span>
                 <span>B = \lim_{x \to 0} \dots = \frac{1}{3}</span>
@@ -167,9 +175,20 @@
           </div>
         </div>
 
-        <!-- Tab 2: Math Vision OCR -->
+        <!-- Tab 2: Math Vision OCR (Single / Cropped Formula with Pix2Tex) -->
         <div id="tab-vision" class="tab-content">
           <div class="vision-container">
+            <!-- Mode Hint -->
+            <div class="vision-mode-hint">
+              <div class="mode-hint-content">
+                <span class="mode-hint-badge">💡 ស្កេនរូបមន្តពុម្ពទោល (Single Printed Formula — Pix2Tex)</span>
+                <span class="mode-hint-text">ផ្ទាំងនេះសម្រាប់រូបមន្តពុម្ពទោល។ សម្រាប់សន្លឹកកិច្ចការទាំងមូល សូមប្រើផ្ទាំង <strong>[ 📄 សន្លឹកកិច្ចការ (Full Worksheet) ]</strong>។</span>
+              </div>
+              <button type="button" id="btn-goto-worksheet" class="btn-chip chip-khmer" style="white-space: nowrap;">
+                📄 ទៅកាន់ Worksheet
+              </button>
+            </div>
+
             <!-- Dropzone -->
             <div id="dropzone" class="dropzone">
               <input type="file" id="file-input" accept="image/*" class="file-input-hidden">
@@ -178,7 +197,7 @@
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 </div>
                 <p class="dropzone-title">អូសទម្លាក់រូបភាពនៅទីនេះ ឬចុចដើម្បីជ្រើសរើស</p>
-                <p class="dropzone-subtitle">Drag & drop math image, or click to browse (PNG, JPG, WebP)</p>
+                <p class="dropzone-subtitle">Drag & drop math formula, or click to browse (Single/Cropped formula only)</p>
               </div>
               <div class="dropzone-preview hidden" id="dropzone-preview">
                 <div class="crop-container" id="crop-container">
@@ -214,7 +233,7 @@
 
             <!-- Sample Image Options -->
             <div class="sample-images-bar">
-              <span class="sample-label">រូបភាពគំរូ (Sample Images):</span>
+              <span class="sample-label">រូបភាពគំរូ (Single Formula Samples):</span>
               <div class="sample-buttons">
                 <button type="button" class="btn-sample" data-sample="samples/sample1.png">
                   <span>Sample 1: Linear</span>
@@ -231,7 +250,77 @@
             <div class="action-footer">
               <button id="vision-solve-btn" class="btn-primary btn-large" disabled>
                 <span class="btn-icon">🔍</span>
-                <span class="btn-text">ស្កេន និង ដោះស្រាយ (Scan & Solve)</span>
+                <span class="btn-text">ស្កេន និង ដោះស្រាយ (Scan & Solve Single Formula)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Full Worksheet Pipeline (Kiri OCR → ExerciseService → Context Solver) -->
+        <div id="tab-worksheet" class="tab-content">
+          <div class="worksheet-container">
+            <!-- Pipeline Architecture Flow Banner -->
+            <div class="worksheet-flow-banner">
+              <div class="flow-title-row">
+                <span class="flow-badge">📄 Full Worksheet Engine</span>
+                <span class="flow-no-crop-tag">✨ មិនបាច់កាត់រូបភាព (No crop required)</span>
+              </div>
+              <div class="flow-steps-chain">
+                <span class="flow-node">Full Image</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-node highlight-cyan">Kiri Khmer OCR</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-node">ExerciseService</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-node highlight-emerald">Context Propagation</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-node highlight-indigo">SymPy Solver</span>
+              </div>
+            </div>
+
+            <!-- Full Worksheet Dropzone (NO CROPPING REQUIRED) -->
+            <div id="worksheet-dropzone" class="dropzone worksheet-dropzone">
+              <input type="file" id="worksheet-file-input" accept="image/*" class="file-input-hidden">
+              <div class="dropzone-empty" id="worksheet-dropzone-empty">
+                <div class="dropzone-icon" style="color: #06b6d4;">
+                  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </div>
+                <p class="dropzone-title">អូសទម្លាក់សន្លឹកកិច្ចការពេញលេញនៅទីនេះ</p>
+                <p class="dropzone-subtitle">Drag & drop full math document / worksheet — No manual crop needed</p>
+                <div class="worksheet-capability-chips">
+                  <span class="cap-chip">🇰🇭 Khmer Instructions & Titles</span>
+                  <span class="cap-chip">🔗 Shared Context Variables (e.g. x, y)</span>
+                  <span class="cap-chip">⚡ All Problems Solved End-to-End</span>
+                </div>
+              </div>
+              <div class="dropzone-preview hidden" id="worksheet-dropzone-preview">
+                <div class="worksheet-image-wrapper">
+                  <img id="worksheet-preview-image" src="" alt="Worksheet document preview">
+                </div>
+                <button type="button" id="worksheet-remove-btn" class="btn-remove-image" title="Remove worksheet">&times;</button>
+              </div>
+            </div>
+
+            <!-- Sample Worksheets Quick Selector -->
+            <div class="sample-images-bar">
+              <span class="sample-label">សន្លឹកកិច្ចការគំរូពិតប្រាកដ (Real Worksheet Samples):</span>
+              <div class="sample-buttons">
+                <button type="button" class="btn-sample btn-sample-ws" data-worksheet-sample="samples/worksheet_shared_context.png">
+                  <span class="btn-sample-icon">📌</span>
+                  <span>លំហាត់អថេររួម (Shared Context: x = 2 - √3, y = 3 + √3)</span>
+                </button>
+                <button type="button" class="btn-sample btn-sample-ws" data-worksheet-sample="samples/worksheet_factorization.jpg">
+                  <span class="btn-sample-icon">📐</span>
+                  <span>ដាក់ជាផលគុណកត្តា (Factorization Sheet)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Analyze Action Button -->
+            <div class="action-footer">
+              <button id="worksheet-analyze-btn" class="btn-primary btn-large btn-worksheet-action" disabled>
+                <span class="btn-icon">📄</span>
+                <span class="btn-text">វិភាគសន្លឹកកិច្ចការ (Analyze Worksheet)</span>
               </button>
             </div>
           </div>
@@ -270,55 +359,154 @@
 
         <!-- Solved Content -->
         <div id="solution-content" class="solution-content hidden">
-          <!-- Hero Answer Banner -->
-          <div class="hero-answer-card">
-            <div class="hero-meta">
-              <span id="badge-problem-type" class="badge badge-primary">Linear Equation</span>
-              <span id="badge-verified" class="badge badge-success">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>ផ្ទៀងផ្ទាត់ត្រឹមត្រូវ (Verified)</span>
-              </span>
-            </div>
-            
-            <div class="hero-body">
-              <div class="hero-label">ចម្លើយចុងក្រោយ (Final Answer):</div>
-              <div class="hero-answer">
-                <span class="var-prefix" id="hero-var"></span>
-                <span class="answer-val" id="hero-answer">5</span>
+          <!-- VIEW A: Single Formula / Manual Typing Solution View -->
+          <div id="single-solution-view">
+            <!-- Hero Answer Banner -->
+            <div class="hero-answer-card">
+              <div class="hero-meta">
+                <span id="badge-problem-type" class="badge badge-primary">Linear Equation</span>
+                <span id="badge-verified" class="badge badge-success">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>ផ្ទៀងផ្ទាត់ត្រឹមត្រូវ (Verified)</span>
+                </span>
+              </div>
+              
+              <div class="hero-body">
+                <div class="hero-label">ចម្លើយចុងក្រោយ (Final Answer):</div>
+                <div class="hero-answer">
+                  <span class="var-prefix" id="hero-var"></span>
+                  <span class="answer-val" id="hero-answer">5</span>
+                </div>
+              </div>
+
+              <!-- OCR Notice if came from vision -->
+              <div id="ocr-info-banner" class="ocr-banner hidden">
+                <div id="ocr-exercise-header-row" class="ocr-exercise-header-row hidden">
+                  <span id="ocr-exercise-badge" class="ocr-badge-title"></span>
+                  <span id="ocr-instruction-badge" class="ocr-badge-instruction"></span>
+                </div>
+                <div class="ocr-text-row">
+                  <span class="ocr-tag">OCR Detected:</span>
+                  <code id="ocr-detected-text"></code>
+                </div>
+                <div id="ocr-cleaned-row" class="ocr-text-row hidden">
+                  <span class="ocr-tag">Math Extracted:</span>
+                  <code id="ocr-cleaned-text"></code>
+                </div>
+                <div class="ocr-conf-row">
+                  <span class="ocr-conf-label">Confidence:</span>
+                  <div class="conf-bar"><div class="conf-fill" id="ocr-conf-fill"></div></div>
+                  <span id="ocr-conf-val" class="ocr-conf-val">95%</span>
+                </div>
               </div>
             </div>
 
-            <!-- OCR Notice if came from vision -->
-            <div id="ocr-info-banner" class="ocr-banner hidden">
-              <div id="ocr-exercise-header-row" class="ocr-exercise-header-row hidden">
-                <span id="ocr-exercise-badge" class="ocr-badge-title"></span>
-                <span id="ocr-instruction-badge" class="ocr-badge-instruction"></span>
+            <!-- Lesson Curriculum Banner -->
+            <div id="lesson-curriculum-banner" class="lesson-banner hidden">
+              <div class="lesson-banner-header">
+                <span class="lesson-pill-tag">📖 កម្មវិធីសិក្សា (Curriculum Lesson)</span>
+                <div id="lesson-formula-pill" class="lesson-formula-pill hidden">
+                  <span class="formula-label">រូបមន្ត (Rule):</span>
+                  <span id="lesson-formula-content" class="formula-content"></span>
+                </div>
               </div>
-              <div class="ocr-text-row">
-                <span class="ocr-tag">OCR Detected:</span>
-                <code id="ocr-detected-text"></code>
+              <div class="lesson-banner-body">
+                <div class="lesson-breadcrumb">
+                  <span id="lesson-chapter-badge" class="lesson-badge chapter">ជំពូក</span>
+                  <span class="lesson-arrow">›</span>
+                  <span id="lesson-name-badge" class="lesson-badge lesson">មេរៀន</span>
+                  <span class="lesson-arrow">›</span>
+                  <span id="lesson-method-badge" class="lesson-badge method">វិធីសាស្ត្រ</span>
+                </div>
               </div>
-              <div id="ocr-cleaned-row" class="ocr-text-row hidden">
-                <span class="ocr-tag">Math Extracted:</span>
-                <code id="ocr-cleaned-text"></code>
-              </div>
-              <div class="ocr-conf-row">
-                <span class="ocr-conf-label">Confidence:</span>
-                <div class="conf-bar"><div class="conf-fill" id="ocr-conf-fill"></div></div>
-                <span id="ocr-conf-val" class="ocr-conf-val">95%</span>
+            </div>
+
+            <!-- Step-by-Step Explanation List -->
+            <div class="steps-section">
+              <h3 class="steps-heading">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>ដំណាក់កាលដោះស្រាយ (Step-by-Step Solution)</span>
+              </h3>
+              <div id="steps-list" class="steps-list">
+                <!-- Dynamically populated -->
               </div>
             </div>
           </div>
 
-          <!-- Step-by-Step Explanation List -->
-          <div class="steps-section">
-            <h3 class="steps-heading">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-              <span>ដំណាក់កាលដោះស្រាយ (Step-by-Step Solution)</span>
-            </h3>
-            <div id="steps-list" class="steps-list">
-              <!-- Dynamically populated -->
+          <!-- VIEW B: Full Worksheet Analysis & Solutions View -->
+          <div id="worksheet-solution-view" class="worksheet-solution-view hidden">
+            <!-- Worksheet Header Card -->
+            <div class="ws-header-card">
+              <div class="ws-header-top">
+                <div class="ws-header-title-group">
+                  <span class="ws-header-icon">📄</span>
+                  <div>
+                    <h2 class="ws-header-title">លទ្ធផលវិភាគសន្លឹកកិច្ចការ</h2>
+                    <span class="ws-header-subtitle">Worksheet Pipeline: Kiri OCR → ExerciseService → Solver</span>
+                  </div>
+                </div>
+                <span id="ws-badge-status" class="badge badge-success">✓ វិភាគជោគជ័យ</span>
+              </div>
+              <div class="ws-stats-row">
+                <span id="ws-badge-total" class="badge badge-primary">3 លំហាត់ (Problems)</span>
+                <span id="ws-badge-solved" class="badge badge-success">3 បានដោះស្រាយ (Solved)</span>
+                <span class="badge badge-cyan">Kiri Khmer OCR</span>
+                <span id="ws-badge-conf" class="badge badge-secondary">Confidence: 95%</span>
+              </div>
             </div>
+
+            <!-- Detected Instruction Card -->
+            <div id="ws-instruction-card" class="ws-section-card ws-instruction-card hidden">
+              <div class="ws-card-header">
+                <div class="ws-card-header-left">
+                  <span class="ws-card-icon">📋</span>
+                  <span class="ws-card-title">ការណែនាំ (Detected Instruction)</span>
+                </div>
+                <span id="ws-instruction-type" class="badge badge-primary">calculate</span>
+              </div>
+              <div id="ws-instruction-text" class="ws-instruction-text"></div>
+            </div>
+
+            <!-- Context / Given Information Card (Shared Context e.g. x = 2 - √3, y = 3 + √3) -->
+            <div id="ws-context-card" class="ws-section-card ws-context-card hidden">
+              <div class="ws-card-header">
+                <div class="ws-card-header-left">
+                  <span class="ws-card-icon">📌</span>
+                  <span class="ws-card-title">ព័ត៌មានដែលបានផ្ដល់ (Given Context / Variables)</span>
+                </div>
+                <span class="badge badge-emerald">Shared Context</span>
+              </div>
+              <div id="ws-context-variables" class="ws-context-grid">
+                <!-- Dynamically populated e.g. x = 2 - √3, y = 3 + √3 -->
+              </div>
+              <p class="ws-context-note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>តម្លៃទាំងនេះត្រូវបានរក្សាទុក និងផ្ទេរទៅគ្រប់លំហាត់ដែលពាក់ព័ន្ធ (Propagated across dependent problems)</span>
+              </p>
+            </div>
+
+            <!-- Problems and Solutions List -->
+            <div class="ws-problems-section">
+              <div class="ws-problems-section-header">
+                <div class="ws-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                  <span>បញ្ជីលំហាត់ និងដំណោះស្រាយ (Detected Problems & Solutions)</span>
+                </div>
+                <span id="ws-problems-count" class="ws-counter-badge">3 Problems</span>
+              </div>
+              <div id="ws-problems-container" class="ws-problems-container">
+                <!-- Dynamically rendered problem cards -->
+              </div>
+            </div>
+
+            <!-- Raw Kiri OCR Collapsible -->
+            <details id="ws-ocr-details" class="ws-ocr-details">
+              <summary class="ws-ocr-summary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <span>មើលអត្ថបទ OCR ដើមពី Kiri OCR (View Raw Kiri OCR Text)</span>
+              </summary>
+              <pre id="ws-raw-ocr-text" class="ws-raw-ocr-pre"></pre>
+            </details>
           </div>
         </div>
       </section>
