@@ -7,8 +7,10 @@ Includes:
 - Integrals (future)
 """
 
+from app.solvers.calculus.derivative_solver import DerivativeSolver
 from app.solvers.calculus.limit_solver import LimitSolver
 
 __all__ = [
+    "DerivativeSolver",
     "LimitSolver",
 ]

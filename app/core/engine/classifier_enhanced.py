@@ -242,6 +242,10 @@ class ProblemClassifier:
         if len(parsed.symbols) == 0:
             return "numeric_equation"
 
+        # Check for function definition f(x) = ...
+        if isinstance(expr.lhs, (sympy.Function, sympy.core.function.AppliedUndef)):
+            return "calculus_derivative"
+
         # Check for multiple equations (system)
         # This would need to be detected earlier in parsing for true systems
         if len(parsed.symbols) > 1:

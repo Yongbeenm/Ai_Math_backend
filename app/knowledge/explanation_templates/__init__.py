@@ -9,6 +9,7 @@ from app.knowledge.explanation_templates.algebra import (
     template_fact_trinomial,
 )
 from app.knowledge.explanation_templates.calculus import (
+    template_derivative_step_by_step,
     template_limit_conjugate,
     template_limit_direct_substitution,
     template_limit_factor_cancel,
@@ -28,6 +29,7 @@ __all__ = [
     "template_limit_direct_substitution",
     "template_limit_conjugate",
     "template_limit_factor_cancel",
+    "template_derivative_step_by_step",
     "template_complex_arithmetic",
     "template_vector_dot_product",
 ]

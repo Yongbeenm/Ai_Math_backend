@@ -9,6 +9,7 @@ then add one line here. No other file needs to change.
 from __future__ import annotations
 
 from app.reasoning.steps.base import StepGenerator
+from app.reasoning.steps.calculus_derivative import DerivativeStepGenerator
 from app.reasoning.steps.calculus_limit import LimitStepGenerator
 from app.reasoning.steps.expansion import ExpansionStepGenerator
 from app.reasoning.steps.inequality import LinearInequalityStepGenerator
@@ -26,6 +27,7 @@ _GENERATORS: dict[str, StepGenerator] = {
     "system_of_equations": SystemStepGenerator(),
     "linear_inequality": LinearInequalityStepGenerator(),
     "calculus_limit": LimitStepGenerator(),
+    "calculus_derivative": DerivativeStepGenerator(),
     "factored_expression": _expansion_gen,
     "expression_expansion": _expansion_gen,
     "polynomial_expansion": _expansion_gen,

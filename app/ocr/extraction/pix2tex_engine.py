@@ -42,6 +42,15 @@ def clean_pix2tex_output(latex_code: str) -> str:
 
     t = (latex_code or "").strip()
 
+    # Normalize tilde spaces, spacing commands and equivalence symbols
+    t = t.replace("~", " ")
+    t = t.replace("{(}", "(").replace("{)}", ")")
+    t = t.replace("{[}", "[").replace("{]}", "]")
+    t = re.sub(r"([+\-=])\{\s*(\\frac\{[^{}]*\}\{[^{}]*\})\s*\}", r"\1\2", t)
+    t = re.sub(r"\\(?:quad|qquad|hfill|vfill)", " ", t)
+    t = re.sub(r"\\(?:equiv|doteq|simeq|cong)\b", "=", t)
+    t = t.replace(r"\equiv", "=").replace(r"\doteq", "=")
+
     # Normalize liIm typos from OCR before array parsing
     t = re.sub(r"\\(?:mathrm|operatorname\*?|mathbf)\{liIm\}", lambda m: r"\lim", t)
     t = re.sub(r"\bliIm\b", lambda m: r"\lim", t)
@@ -55,7 +64,7 @@ def clean_pix2tex_output(latex_code: str) -> str:
     )
     if array_match:
         content = array_match.group(1).strip()
-        rows = [r.strip() for r in re.split(r"\\\\|\\[\s]+|\\cr", content) if r.strip()]
+        rows = [r.strip() for r in re.split(r"\\\\|\\cr", content) if r.strip()]
         if len(rows) >= 2:
             arrow_match = None
             for r in rows[1:]:
@@ -217,6 +226,59 @@ class Pix2TexVisionEngine(MathVisionEngine):
             pass
         return None
 
+    @staticmethod
+    def _detect_header_split(img: Image.Image) -> int | None:
+        """
+        Detect horizontal blank gap in the top 55% of an image that separates
+        a header instruction (e.g. 'គណនាដេរីវេនៃអនុគមន៍ខាងក្រោម ៈ') from the mathematical formula below it.
+        """
+        try:
+            import numpy as np
+
+            gray = np.array(img.convert("L"))
+            h, w = gray.shape
+            binary = gray < 200
+            row_counts = np.sum(binary, axis=1)
+
+            max_search_y = int(h * 0.55)
+            gap_start = None
+            for y in range(15, max_search_y):
+                if row_counts[y] <= 2:
+                    if gap_start is None:
+                        gap_start = y
+                else:
+                    if gap_start is not None:
+                        gap_len = y - gap_start
+                        if gap_len >= 12:
+                            ink_above = np.sum(row_counts[:gap_start])
+                            if ink_above > 40:
+                                return gap_start + gap_len // 2
+                        gap_start = None
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _extract_header_text(crop: Image.Image) -> str | None:
+        """Extract header instruction text using Tesseract."""
+        try:
+            from PIL import ImageOps
+            import pytesseract
+
+            padded = ImageOps.expand(crop, border=20, fill="white")
+            for lang in ["khm", "khm+eng"]:
+                try:
+                    txt = pytesseract.image_to_string(padded, lang=lang).strip()
+                    if txt:
+                        txt = " ".join(txt.split())
+                        if any("\u1780" <= c <= "\u17ff" for c in txt):
+                            return txt
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return None
+
     def detect(self, image_bytes: bytes) -> VisionResult:
         if not image_bytes:
             return VisionResult(
@@ -229,6 +291,13 @@ class Pix2TexVisionEngine(MathVisionEngine):
             img = Image.open(BytesIO(image_bytes))
             from PIL import ImageOps
             img = ImageOps.exif_transpose(img)
+
+            header_text = None
+            header_y = self._detect_header_split(img)
+            if header_y:
+                header_crop = img.crop((0, 0, img.width, header_y))
+                header_text = self._extract_header_text(header_crop)
+                img = img.crop((0, header_y, img.width, img.height))
 
             split_x = self._detect_label_gap(img)
             label_text = None
@@ -244,15 +313,15 @@ class Pix2TexVisionEngine(MathVisionEngine):
                 f_padded = ImageOps.expand(f_crop, border=(20, 20, 20, 20), fill="white")
                 raw_latex = self.model(f_padded)
             else:
-                raw_latex = self.model(img)
+                f_padded = ImageOps.expand(img, border=(20, 20, 20, 20), fill="white")
+                raw_latex = self.model(f_padded)
 
             latex_code = clean_pix2tex_output(raw_latex)
 
-            # If raw formula failed, produced an array layout, or has noise artifacts,
+            # If raw formula failed or has noise artifacts,
             # apply morphological noise reduction on thresholded image and re-run.
             should_denoise = (
                 not latex_code
-                or "\\begin{array}" in raw_latex
                 or "\\vdots" in raw_latex
                 or "\\ddots" in raw_latex
                 or "\\mathrm{liIm}" in raw_latex
@@ -279,6 +348,9 @@ class Pix2TexVisionEngine(MathVisionEngine):
 
             if label_text and latex_code and not latex_code.startswith(label_text):
                 latex_code = f"{label_text} {latex_code}"
+
+            if header_text and latex_code:
+                latex_code = f"{header_text} {latex_code}"
 
             if not latex_code:
                 return VisionResult(

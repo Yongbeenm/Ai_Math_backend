@@ -50,6 +50,9 @@ class ParsedMath:
 def _clean_latex_text(text: str) -> str:
     """Normalize LaTeX notation, strip trailing spacing artifacts and clean functions."""
     t = text.strip()
+    t = t.replace("{(}", "(").replace("{)}", ")")
+    t = t.replace("{[}", "[").replace("{]}", "]")
+    t = re.sub(r"([+\-=])\{\s*(\\frac\{[^{}]*\}\{[^{}]*\})\s*\}", r"\1\2", t)
     # Strip leading label prefix like \mathcal{Q}. or 2. or a. or (a) before a formula
     t = re.sub(
         r"^\s*(?:"
@@ -123,7 +126,14 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
 
     if "=" in text and not has_inequality:
         lhs_text, rhs_text = text.split("=", 1)
-        lhs = latex2sympy(lhs_text.strip())
+        lhs_clean = lhs_text.strip()
+        m_func = re.match(
+            r"^\s*([a-zA-Z])\s*(?:\\left)?\(\s*([a-zA-Z])\s*(?:\\right)?\)\s*$", lhs_clean
+        )
+        if m_func:
+            lhs = sympy.Function(m_func.group(1))(Symbol(m_func.group(2)))
+        else:
+            lhs = latex2sympy(lhs_clean)
         rhs = latex2sympy(rhs_text.strip())
         return Eq(lhs, rhs), True
     else:
@@ -168,7 +178,14 @@ def parse_math_text(raw_expression: str) -> ParsedMath:
     try:
         if "=" in text:
             lhs_text, rhs_text = text.split("=", 1)
-            lhs = parse_expr(lhs_text, transformations=_TRANSFORMATIONS)
+            lhs_clean = lhs_text.strip()
+            m_func = re.match(
+                r"^\s*([a-zA-Z])\s*(?:\\left)?\(\s*([a-zA-Z])\s*(?:\\right)?\)\s*$", lhs_clean
+            )
+            if m_func:
+                lhs = sympy.Function(m_func.group(1))(Symbol(m_func.group(2)))
+            else:
+                lhs = parse_expr(lhs_text, transformations=_TRANSFORMATIONS)
             rhs = parse_expr(rhs_text, transformations=_TRANSFORMATIONS)
             expr = Eq(lhs, rhs)
             is_equation = True

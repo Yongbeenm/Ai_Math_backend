@@ -38,6 +38,8 @@ _HEADER_RE = re.compile(
 _INSTRUCTION_RE = re.compile(
     r"(?i)(?:"
     r"(?:Find|Calculate|Evaluate|Compute|Solve)\s+(?:each\s+of\s+)?(?:the\s+)?(?:following\s+)?limits?(?:\s+of)?(?:\s+the\s+following)?"
+    r"|(?:Find|Calculate|Evaluate|Compute|Determine|Differentiate)\s+(?:each\s+of\s+)?(?:the\s+)?(?:following\s+)?derivatives?(?:\s+of)?(?:\s+the\s+following)?(?:\s+functions?)?"
+    r"|(?:ចូរ)?(?:គណនា|រក)(?:នូវ)?(?:តម្លៃ)?(?:នៃ)?ដេរីវេ(?:នៃអនុគមន៍)?(?:ខាងក្រោម)?(?:នេះ)?(?:ទាំងនេះ)?(?:ដូចខាងក្រោម)?"
     r"|Find\s+(?:the\s+)?value\s+of\s+[a-zA-Z]\s*(?:if|in|when|where|:)?"
     r"|Solve\s+for\s+[a-zA-Z]\s*(?:if|in|when|where|:)?"
     r"|Solve\s+the\s+(?:following\s+)?equation"

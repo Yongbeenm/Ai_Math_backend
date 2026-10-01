@@ -140,3 +140,57 @@ template_limit_factor_cancel = ExplanationTemplate(
         ),
     ],
 )
+
+# --- Template 4: Step-by-Step Derivative Computation ---
+template_derivative_step_by_step = ExplanationTemplate(
+    id="tmpl_derivative_step_by_step",
+    method_id="method_derivative_rules",
+    name_km="គណនាដេរីវេនៃអនុគមន៍មួយជំហានម្តងៗ",
+    name_en="Step-by-Step Derivative of Functions",
+    verification_strategy="none",
+    pedagogical_notes_km="កំណត់អនុគមន៍ f(x) អនុវត្តប្រមាណវិធីដេរីវេតាមវិធានគ្រឹះ (ផលបូក ផលចែក រ៉ាឌីកាល់ អិចស្បូណង់ស្យែល) និងសម្រួលចម្លើយចុងក្រោយ។",
+    pedagogical_notes_en="Identify function f(x), apply differentiation rules (sum/difference, quotient, radical, exponential, power), and simplify.",
+    steps=[
+        ExplanationStepTemplate(
+            order=1,
+            action_type="identify_function",
+            title_km="កំណត់អនុគមន៍ដើម",
+            title_en="Identify Given Function",
+            rationale_template_km="យើងមានអនុគមន៍ f(x) ឬ y និងអថេរដេរីវេ x។",
+            rationale_template_en="Identify given function f(x) or y with respect to differentiation variable x.",
+        ),
+        ExplanationStepTemplate(
+            order=2,
+            action_type="apply_derivative_operator",
+            title_km="អនុវត្តប្រមាណវិធីដេរីវេ",
+            title_en="Apply Derivative Operator",
+            rationale_template_km="គេបាន f'(x) = [f(x)]' និងបំបែកតាមលក្ខណៈដេរីវេនៃផលបូក ដក។",
+            rationale_template_en="Express f'(x) = [f(x)]' and apply linearity across terms.",
+            rule_reference="(u \\pm v)' = u' \\pm v'",
+        ),
+        ExplanationStepTemplate(
+            order=3,
+            action_type="differentiate_components",
+            title_km="គណនាដេរីវេនៃតួនិមួយៗ",
+            title_en="Differentiate Each Component",
+            rationale_template_km="អនុវត្តវិធានដេរីវេស្វ័យគុណ ផលចែក រ៉ាឌីកាល់ ឬអិចស្បូណង់ស្យែលលើតួនិមួយៗ។",
+            rationale_template_en="Apply specific derivative rules (power, quotient, radical, exponential) to each component.",
+        ),
+        ExplanationStepTemplate(
+            order=4,
+            action_type="simplify_and_factor",
+            title_km="សម្រួលកន្សោម និងដាក់ជាផលគុណកត្តា",
+            title_en="Simplify and Factor Expression",
+            rationale_template_km="តម្រូវភាគបែងរួម ពន្លា និងដាក់ជាផលគុណកត្តាសម្រួល។",
+            rationale_template_en="Combine terms with common denominator, expand numerator, and factor.",
+        ),
+        ExplanationStepTemplate(
+            order=5,
+            action_type="state_final_derivative",
+            title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
+            title_en="State Final Derivative Result",
+            rationale_template_km="សរសេរចម្លើយដេរីវេ f'(x) ឬ y' ក្នុងទម្រង់សម្រួលទូទៅ។",
+            rationale_template_en="State final derivative result f'(x) or y' in simplified form.",
+        ),
+    ],
+)

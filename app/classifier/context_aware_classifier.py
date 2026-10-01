@@ -76,6 +76,9 @@ class ContextAwareClassifier:
             "comparison",
             "inequality",
         ],
+        InstructionType.DERIVATIVE: [
+            "calculus_derivative",
+        ],
     }
 
     def __init__(self):
@@ -219,6 +222,10 @@ class ContextAwareClassifier:
         # Prove instruction: proof/verification
         if instruction_type == InstructionType.PROVE:
             return "proof_verification"
+
+        # Derivative instruction: calculus derivative
+        if instruction_type == InstructionType.DERIVATIVE:
+            return "calculus_derivative"
 
         # Default: return base type
         return base_type

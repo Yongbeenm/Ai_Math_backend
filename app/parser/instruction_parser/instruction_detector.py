@@ -44,7 +44,7 @@ class ParsedInstruction:
             MathAction.DETERMINE: InstructionType.FIND,
             MathAction.VERIFY: InstructionType.PROVE,
             MathAction.SHOW: InstructionType.PROVE,
-            MathAction.DERIVE: InstructionType.FIND,
+            MathAction.DERIVE: InstructionType.DERIVATIVE,
             MathAction.TRANSFORM: InstructionType.SIMPLIFY,
         }
 

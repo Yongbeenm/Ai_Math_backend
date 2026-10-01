@@ -34,6 +34,7 @@ class InstructionType(str, Enum):
     PROVE = "prove"  # បង្ហាញថា - prove/demonstrate
     COMPARE = "compare"  # ប្រៀបធៀប - compare expressions
     GRAPH = "graph"  # គូរក្រាប - draw graph
+    DERIVATIVE = "derivative"  # គណនាដេរីវេ - calculate derivative
     UNKNOWN = "unknown"  # Cannot determine instruction type
 
 

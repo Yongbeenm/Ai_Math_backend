@@ -166,6 +166,14 @@ class KhmerMathVocabulary:
             synonyms=["ត្រួតពិនិត្យ", "ពិនិត្យមើល"],
             context_words=["ថា", "ចម្លើយ", "លទ្ធផល"],
         ),
+        # Derivative (គណនាដេរីវេ, រកដេរីវេ, ដេរីវេ)
+        InstructionPattern(
+            keywords=["ដេរីវេ"],
+            action=MathAction.DERIVE,
+            language="km",
+            synonyms=["គណនាដេរីវេ", "រកដេរីវេ", "ដេរីវេនៃអនុគមន៍", "គណនាដេរីវេនៃអនុគមន៍"],
+            context_words=["អនុគមន៍", "កន្សោម", "ខាងក្រោម"],
+        ),
     ]
 
     # Instruction patterns (English)
@@ -267,6 +275,13 @@ class KhmerMathVocabulary:
             language="en",
             synonyms=["obtain", "deduce"],
             context_words=["formula", "expression", "equation"],
+        ),
+        InstructionPattern(
+            keywords=["differentiate", "derivative"],
+            action=MathAction.DERIVE,
+            language="en",
+            synonyms=["find the derivative", "calculate the derivative", "compute the derivative", "take derivative"],
+            context_words=["function", "expression", "with respect to", "following"],
         ),
     ]
 
