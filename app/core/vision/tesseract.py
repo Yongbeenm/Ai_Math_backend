@@ -17,6 +17,7 @@ Setup:
 
 Documentation: https://github.com/tesseract-ocr/tesseract
 """
+
 from __future__ import annotations
 
 from io import BytesIO
@@ -24,6 +25,7 @@ from io import BytesIO
 try:
     import pytesseract
     from PIL import Image
+
     TESSERACT_AVAILABLE = True
 except ImportError:
     TESSERACT_AVAILABLE = False
@@ -34,37 +36,36 @@ from app.core.vision.base import MathVisionEngine, VisionResult
 class TesseractVisionEngine(MathVisionEngine):
     """
     OCR using Tesseract (offline, open-source).
-    
+
     Pros:
     - Free and open-source
     - Works offline (no internet needed)
     - No API limits or costs
     - Privacy-friendly (data stays local)
     - Supports Khmer language
-    
+
     Cons:
     - Less accurate for handwriting
     - Struggles with complex math notation
     - Slower than cloud services
     - Requires local installation
     """
-    
+
     def __init__(self, lang: str = "eng+khm"):
         """
         Initialize Tesseract engine.
-        
+
         Args:
             lang: Language codes (e.g., "eng" for English, "khm" for Khmer,
                   "eng+khm" for both). Use tesseract --list-langs to see available.
         """
         if not TESSERACT_AVAILABLE:
             raise ImportError(
-                "pytesseract and PIL required. "
-                "Install with: pip install pytesseract pillow"
+                "pytesseract and PIL required. Install with: pip install pytesseract pillow"
             )
-        
+
         self.lang = lang
-        
+
         # Verify Tesseract is installed
         try:
             pytesseract.get_tesseract_version()
@@ -74,8 +75,8 @@ class TesseractVisionEngine(MathVisionEngine):
                 "- macOS: brew install tesseract\n"
                 "- Ubuntu: sudo apt-get install tesseract-ocr\n"
                 "- Windows: https://github.com/UB-Mannheim/tesseract/wiki"
-            )
-    
+            ) from None
+
     def detect(self, image_bytes: bytes) -> VisionResult:
         """
         Use Tesseract to detect text in image with preprocessing and math sanitization.
@@ -119,11 +120,7 @@ class TesseractVisionEngine(MathVisionEngine):
                 config=custom_config,
                 output_type=pytesseract.Output.DICT,
             )
-            confidences = [
-                float(conf) / 100.0
-                for conf in data.get("conf", [])
-                if conf != -1
-            ]
+            confidences = [float(conf) / 100.0 for conf in data.get("conf", []) if conf != -1]
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0.85
 
             if not raw_text:

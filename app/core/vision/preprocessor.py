@@ -11,6 +11,7 @@ Enhancements:
 - Edge-preserving denoising
 - White margin padding to prevent edge text clipping
 """
+
 from __future__ import annotations
 
 import io

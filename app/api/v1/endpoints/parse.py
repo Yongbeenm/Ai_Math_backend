@@ -1,43 +1,28 @@
 """
-POST /api/v1/math/parse — returns just the detected intent and normalized
-expression without solving. Useful for the mobile app to show "Detected
-equation: 2x + 5 = 15" and let the user confirm/edit before solving, per
-the 'Display detected equation' feature in the handoff doc.
+POST /api/v1/math/parse — returns detected intent, normalized expression, and problem type
+without solving. Allows the client UI to preview and let the user edit before submitting.
 """
-from fastapi import APIRouter
 
-from app.core.engine.classifier import classify_problem
-from app.core.khmer.extractor import extract_expression
-from app.core.khmer.intent import RuleBasedIntentClassifier
-from app.core.khmer.normalizer import normalize_khmer_text
-from app.core.parser.expression_parser import ExpressionParseError, parse_math_text
+from fastapi import APIRouter, Depends
+
 from app.models.schemas import APIResponse, SolveRequest
+from app.services.math_service import MathProcessingError, MathService, get_math_service
 
 router = APIRouter()
-_intent_classifier = RuleBasedIntentClassifier()
 
 
 @router.post("/math/parse", response_model=APIResponse, tags=["math"])
-def parse_math(payload: SolveRequest) -> APIResponse:
-    normalized_text = normalize_khmer_text(payload.question)
-    intent = _intent_classifier.classify(normalized_text)
-    raw_expression = extract_expression(normalized_text)
-
-    if raw_expression is None:
-        return APIResponse(success=False, error="No math expression detected.")
-
+def parse_math(
+    payload: SolveRequest,
+    math_service: MathService = Depends(get_math_service),
+) -> APIResponse:
+    """
+    Parses math input and returns detected intent, raw expression,
+    normalized SymPy expression, and problem type without executing a solve.
+    """
     try:
-        parsed = parse_math_text(raw_expression)
-    except ExpressionParseError as exc:
+        parsed_data = math_service.parse_question(payload.question)
+    except MathProcessingError as exc:
         return APIResponse(success=False, error=str(exc))
 
-    problem_type = classify_problem(parsed)
-    return APIResponse(
-        success=True,
-        data={
-            "detected_intent": intent.value,
-            "raw_expression": raw_expression,
-            "normalized_expression": str(parsed.sympy_expr),
-            "problem_type": problem_type,
-        },
-    )
+    return APIResponse(success=True, data=parsed_data)

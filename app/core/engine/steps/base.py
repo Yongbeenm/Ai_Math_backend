@@ -4,6 +4,7 @@ StepGenerator. Adding support for a new math topic later means writing one
 new class and registering it in `registry.py` — nothing else in the API or
 engine layer changes.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

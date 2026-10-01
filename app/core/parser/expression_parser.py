@@ -6,10 +6,11 @@ This is the boundary between "text" and "math": everything after this point
 in the pipeline works with SymPy objects, never strings, until the very end
 when we render steps back out.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
 import sympy
 from sympy import Eq, Limit, Symbol
@@ -27,6 +28,7 @@ _TRANSFORMATIONS = standard_transformations + (
 
 try:
     from latex2sympy2 import latex2sympy
+
     LATEX2SYMPY_AVAILABLE = True
 except ImportError:
     latex2sympy = None  # type: ignore[assignment]
@@ -65,7 +67,12 @@ def _clean_latex_text(text: str) -> str:
     t = t.replace(r"\operatorname*{lim}", r"\lim").replace(r"\operatorname{lim}", r"\lim")
     # Clean spaces inside trig functions from OCR (e.g. 's i n' or 'c o s' or 't a n')
     t = t.replace("s i n", r"\sin").replace("c o s", r"\cos").replace("t a n", r"\tan")
-    t = t.replace(r"\\sin", r"\sin").replace(r"\\cos", r"\cos").replace(r"\\tan", r"\tan").replace(r"\\lim", r"\lim")
+    t = (
+        t.replace(r"\\sin", r"\sin")
+        .replace(r"\\cos", r"\cos")
+        .replace(r"\\tan", r"\tan")
+        .replace(r"\\lim", r"\lim")
+    )
 
     # Convert sqrt(...) to \sqrt{...}
     t = re.sub(r"(?:\\)?sqrt\(([^)]+)\)", r"\\sqrt{\1}", t)
@@ -108,13 +115,10 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
     text = _clean_latex_text(text)
 
     if text.count("=") > 1:
-        raise ExpressionParseError(
-            f"Expression contains multiple equals signs: {text!r}"
-        )
+        raise ExpressionParseError(f"Expression contains multiple equals signs: {text!r}")
 
     has_inequality = any(
-        op in text
-        for op in ["<", ">", r"\le", r"\ge", r"\leq", r"\geq", "≤", "≥"]
+        op in text for op in ["<", ">", r"\le", r"\ge", r"\leq", r"\geq", "≤", "≥"]
     )
 
     if "=" in text and not has_inequality:
@@ -143,9 +147,7 @@ def parse_math_text(raw_expression: str) -> ParsedMath:
     text = raw_expression.strip()
 
     if text.count("=") > 1:
-        raise ExpressionParseError(
-            f"Expression contains multiple equals signs: {raw_expression!r}"
-        )
+        raise ExpressionParseError(f"Expression contains multiple equals signs: {raw_expression!r}")
 
     # If the expression uses LaTeX notation, attempt LaTeX parsing first
     is_latex = "\\" in text or ("{" in text and "}" in text) or "lim" in text.lower()
@@ -187,9 +189,7 @@ def parse_math_text(raw_expression: str) -> ParsedMath:
                 )
             except Exception:
                 pass
-        raise ExpressionParseError(
-            f"Could not parse expression: {raw_expression!r}"
-        ) from exc
+        raise ExpressionParseError(f"Could not parse expression: {raw_expression!r}") from exc
 
     symbols = _extract_symbols(expr)
     return ParsedMath(

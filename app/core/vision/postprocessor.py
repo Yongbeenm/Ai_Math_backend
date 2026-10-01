@@ -5,6 +5,7 @@ Cleans and normalizes raw text from OCR engines (Tesseract, Kiri OCR, etc.),
 repairing common optical character recognition artifacts, math notation errors,
 superscript/exponent formatting, and multilingual whitespace issues.
 """
+
 from __future__ import annotations
 
 import re

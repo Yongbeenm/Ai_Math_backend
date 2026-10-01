@@ -1,40 +1,39 @@
-from datetime import datetime
-from typing import Optional
+"""
+History endpoints for managing and inspecting past math solutions.
+"""
 
-from fastapi import APIRouter, Query
+from __future__ import annotations
+
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, Query
 
 from app.models.schemas import APIResponse
-from app.services.history_service import (
-    clear_all_history,
-    delete_history_entry,
-    get_history_stats,
-    list_history,
-)
+from app.services.history_service import HistoryService, get_history_service
 
 router = APIRouter()
 
 
-@router.get("/math/history", response_model=APIResponse, tags=["math"])
+@router.get("/math/history", response_model=APIResponse, tags=["history"])
 async def get_history(
     limit: int = Query(50, ge=1, le=100, description="Maximum number of entries to return"),
     offset: int = Query(0, ge=0, description="Number of entries to skip (for pagination)"),
-    problem_type: Optional[str] = Query(None, description="Filter by problem type (e.g., 'linear_equation')"),
-    date_from: Optional[datetime] = Query(None, description="Filter entries created after this datetime (ISO 8601)"),
-    date_to: Optional[datetime] = Query(None, description="Filter entries created before this datetime (ISO 8601)"),
-    search: Optional[str] = Query(None, description="Search in question text (case-insensitive)"),
+    problem_type: str | None = Query(
+        None, description="Filter by problem type (e.g., 'linear_equation')"
+    ),
+    date_from: datetime | None = Query(
+        None, description="Filter entries created after this datetime (ISO 8601)"
+    ),
+    date_to: datetime | None = Query(
+        None, description="Filter entries created before this datetime (ISO 8601)"
+    ),
+    search: str | None = Query(None, description="Search in question text (case-insensitive)"),
+    history_service: HistoryService = Depends(get_history_service),
 ) -> APIResponse:
     """
     Get history of solved math problems with filtering and pagination.
-    
-    Supports:
-    - Pagination: use limit and offset
-    - Filter by problem type: problem_type=linear_equation
-    - Filter by date range: date_from=2024-01-01T00:00:00Z&date_to=2024-12-31T23:59:59Z
-    - Search in questions: search=polynomial
-    
-    Returns paginated results with metadata.
     """
-    entries, total_count = await list_history(
+    entries, total_count = await history_service.list_entries(
         limit=limit,
         offset=offset,
         problem_type=problem_type,
@@ -42,8 +41,7 @@ async def get_history(
         date_to=date_to,
         search_query=search,
     )
-    
-    # Format entries
+
     items = [
         {
             "id": entry.id,
@@ -57,10 +55,9 @@ async def get_history(
         }
         for entry in entries
     ]
-    
-    # Calculate pagination metadata
+
     has_more = (offset + len(items)) < total_count
-    
+
     response_data = {
         "items": items,
         "pagination": {
@@ -71,55 +68,56 @@ async def get_history(
             "has_more": has_more,
         },
     }
-    
+
     return APIResponse(success=True, data=response_data, error=None)
 
 
-@router.get("/math/history/stats", response_model=APIResponse, tags=["math"])
-async def get_stats() -> APIResponse:
+@router.get("/math/history/stats", response_model=APIResponse, tags=["history"])
+async def get_stats(
+    history_service: HistoryService = Depends(get_history_service),
+) -> APIResponse:
     """
-    Get statistics about history entries.
-    
-    Returns:
-    - Total count of entries
-    - Count by problem type
+    Get aggregate statistics about history entries (total count and count by problem type).
     """
-    stats = await get_history_stats()
+    stats = await history_service.get_stats()
     return APIResponse(success=True, data=stats, error=None)
 
 
-@router.delete("/math/history/{entry_id}", response_model=APIResponse, tags=["math"])
-async def delete_entry(entry_id: int) -> APIResponse:
+@router.delete("/math/history/{entry_id}", response_model=APIResponse, tags=["history"])
+async def delete_entry(
+    entry_id: int,
+    history_service: HistoryService = Depends(get_history_service),
+) -> APIResponse:
     """
     Delete a specific history entry by ID.
     """
-    deleted = await delete_history_entry(entry_id)
-    
+    deleted = await history_service.delete_entry(entry_id)
+
     if not deleted:
         return APIResponse(
             success=False,
             data=None,
-            error=f"History entry with ID {entry_id} not found"
+            error=f"History entry with ID {entry_id} not found",
         )
-    
+
     return APIResponse(
         success=True,
         data={"deleted_id": entry_id},
-        error=None
+        error=None,
     )
 
 
-@router.delete("/math/history", response_model=APIResponse, tags=["math"])
-async def clear_history() -> APIResponse:
+@router.delete("/math/history", response_model=APIResponse, tags=["history"])
+async def clear_history(
+    history_service: HistoryService = Depends(get_history_service),
+) -> APIResponse:
     """
     Clear all history entries.
-    
-    WARNING: This permanently deletes all history. Use with caution.
     """
-    count = await clear_all_history()
-    
+    count = await history_service.clear_all()
+
     return APIResponse(
         success=True,
         data={"deleted_count": count},
-        error=None
+        error=None,
     )

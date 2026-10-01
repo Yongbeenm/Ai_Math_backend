@@ -3,6 +3,7 @@ Pydantic models that define the API contract described in the project
 handoff doc. This file IS the contract your Flutter developer builds
 against — keep it stable; add fields rather than renaming/removing them.
 """
+
 from __future__ import annotations
 
 from typing import Any, Literal

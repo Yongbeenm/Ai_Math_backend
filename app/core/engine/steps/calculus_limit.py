@@ -13,11 +13,13 @@ Designed for High School Grade 12 / Cambodian BacII National Examination:
 4. Final limit evaluation:
    - Substitute x = c into the reduced continuous expression to obtain the exact symbolic answer.
 """
+
 from __future__ import annotations
 
 from typing import Any
+
 import sympy
-from sympy import Limit, Symbol, factor, latex, simplify, trigsimp, S, oo
+from sympy import Limit, S, Symbol, factor, latex, oo, trigsimp
 
 from app.core.engine.steps.base import StepGenerator
 from app.models.schemas import SolutionStep

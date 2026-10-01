@@ -35,55 +35,36 @@ added later.
 
 ```
 app/
-├── main.py                 FastAPI app, CORS, lifespan (creates DB tables)
-├── config.py                Settings (env vars), single source of truth
+├── main.py                     FastAPI app, lifespan, CORS, middleware, exception handlers
+├── config.py                   Settings (pydantic-settings), single source of truth
 ├── api/v1/
-│   ├── router.py             Wires up all endpoint modules
+│   ├── router.py               Wires up all endpoint routers
 │   └── endpoints/
-│       ├── health.py         GET  /health
-│       ├── solve.py          POST /math/solve   (the main endpoint)
-│       ├── parse.py          POST /math/parse   (normalize+classify only)
-│       ├── vision.py         POST /math/vision  (stub — see below)
-│       └── history.py        GET  /math/history
+│       ├── health.py           GET  /health
+│       ├── solve.py            POST /math/solve   (solves & records history)
+│       ├── parse.py            POST /math/parse   (detects intent & normalizes)
+│       ├── vision.py           POST /math/vision  (OCR + math solver)
+│       └── history.py          GET/DELETE /math/history & /math/history/stats
 ├── core/
-│   ├── khmer/                Khmer text understanding (pluggable)
-│   │   ├── digits.py           ០-៩ ⇄ 0-9
-│   │   ├── normalizer.py       Unicode/digit/punctuation normalization
-│   │   ├── extractor.py        Pulls the math substring out of a sentence
-│   │   └── intent.py           solve / evaluate / simplify / unknown
-│   ├── parser/
-│   │   └── expression_parser.py   text -> SymPy Expr/Eq
-│   ├── engine/
-│   │   ├── classifier.py       linear / quadratic / arithmetic / ...
-│   │   ├── verification.py     substitute-and-check
-│   │   ├── solver.py            orchestrates solve + verify + narrate
-│   │   └── steps/                pluggable per-topic step generators
-│   │       ├── base.py            StepGenerator interface
-│   │       ├── linear.py          ✅ linear equations
-│   │       ├── quadratic.py       ✅ quadratic equations  
-│   │       ├── polynomial.py      ✅ NEW: cubic, quartic, quintic
-│   │       ├── inequality.py      ✅ NEW: linear inequalities
-│   │       ├── system.py          🔄 infrastructure ready
-│   │       └── registry.py        problem_type -> StepGenerator lookup
-│   └── vision/                Math Vision (pluggable OCR)
-│       ├── base.py              MathVisionEngine interface
-│       ├── stub.py              NotImplementedVisionEngine
-│       ├── tesseract.py         ✅ NEW: Free offline OCR
-│       ├── google_vision.py     ✅ NEW: Google Cloud Vision
-│       ├── mathpix.py           ✅ NEW: Mathpix for complex math
-│       └── factory.py           ✅ NEW: Provider factory
+│   ├── logging.py              Structured logging with correlation ID injection
+│   ├── middleware.py           X-Request-ID tracking & latency access logging
+│   ├── exceptions.py           Application exception hierarchy (AppException, etc.)
+│   ├── khmer/                  Khmer text understanding & normalization
+│   ├── parser/                 Mathematical text to SymPy AST parsing
+│   ├── engine/                 Classification, deterministic solver, and step generators
+│   └── vision/                 Pluggable OCR engines (Pix2Tex, Kiri, Tesseract, Gemini, etc.)
+├── repositories/
+│   └── history_repository.py   Data access layer with optimized SQL count/group-by queries
+├── services/
+│   ├── math_service.py         Math solving & parsing domain service
+│   ├── vision_service.py       OCR orchestration & exercise extraction service
+│   └── history_service.py      History management with FastAPI dependency injection
 ├── models/
-│   ├── schemas.py             Pydantic models = the API contract
-│   └── db_models.py           SQLAlchemy ORM models
-├── db/
-│   ├── session.py              Async engine + session factory
-│   └── init_db.py              Creates tables on startup
-└── services/
-    ├── math_service.py         The full text-in -> solution-out pipeline
-    └── history_service.py      Save/list solved problems
-
-tests/                        pytest suite (unit + API-level)
-docs/API_CONTRACT.md          Full endpoint reference for the Flutter side
+│   ├── schemas.py              Pydantic API request/response contracts
+│   └── db_models.py            SQLAlchemy 2.0 ORM models
+└── db/
+    ├── session.py              Async engine & session dependency (with rollback safety)
+    └── init_db.py              Initializes tables on startup
 ```
 
 Every "pluggable" module above is an abstract interface with one concrete
@@ -154,12 +135,30 @@ cp .env.example .env
 # 4. Run the test suite
 pytest -v
 
-# 5. Start the API
+# 5. Code formatting & linting
+ruff check app/
+ruff format --check app/
+
+# 6. Start the API locally
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Then open **http://127.0.0.1:8000/docs** for interactive Swagger docs, or
-try it from the command line:
+### Running with Docker
+
+You can also run the entire application containerized:
+
+```bash
+# Build and run with Docker Compose
+docker compose up --build
+
+# Run in background (detached mode)
+docker compose up -d
+
+# Check health and logs
+docker compose logs -f api
+```
+
+Then open **http://127.0.0.1:8000/docs** for interactive Swagger docs, **http://127.0.0.1:8000/redoc** for ReDoc, or test via curl:
 
 ```bash
 curl -s http://127.0.0.1:8000/api/v1/health | python3 -m json.tool

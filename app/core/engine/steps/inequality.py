@@ -9,10 +9,11 @@ Supports:
 
 Every solution is verified by testing boundary and sample points.
 """
+
 from __future__ import annotations
 
 import sympy
-from sympy import Symbol, solve, nsimplify
+from sympy import Symbol, nsimplify
 
 from app.core.engine.steps.base import StepGenerator
 from app.models.schemas import SolutionStep
@@ -37,12 +38,12 @@ def _get_inequality_symbol_khmer(inequality) -> tuple[str, str]:
     """Get the inequality symbol in both English and Khmer."""
     inequality_type = type(inequality).__name__
     symbols_map = {
-        'StrictLessThan': ('<', 'តូចជាង'),
-        'LessThan': ('≤', 'តូចជាង ឬស្មើ'),
-        'StrictGreaterThan': ('>', 'ធំជាង'),
-        'GreaterThan': ('≥', 'ធំជាង ឬស្មើ'),
+        "StrictLessThan": ("<", "តូចជាង"),
+        "LessThan": ("≤", "តូចជាង ឬស្មើ"),
+        "StrictGreaterThan": (">", "ធំជាង"),
+        "GreaterThan": ("≥", "ធំជាង ឬស្មើ"),
     }
-    return symbols_map.get(inequality_type, ('<', 'តូចជាង'))
+    return symbols_map.get(inequality_type, ("<", "តូចជាង"))
 
 
 class LinearInequalityStepGenerator(StepGenerator):
@@ -50,7 +51,7 @@ class LinearInequalityStepGenerator(StepGenerator):
 
     def generate(self, inequality, symbol: Symbol) -> list[SolutionStep]:
         """Generate step-by-step solution for linear inequalities.
-        
+
         Note: The signature uses 'inequality' instead of 'eq' because
         SymPy inequalities are not Eq objects but Relational objects.
         """
@@ -77,7 +78,7 @@ class LinearInequalityStepGenerator(StepGenerator):
             steps.append(
                 SolutionStep(
                     order=order,
-                    description_km=f"ផ្លាស់ទីទាំងអស់មកខាងឆ្វេង៖",
+                    description_km="ផ្លាស់ទីទាំងអស់មកខាងឆ្វេង៖",
                     description_en="Move all terms to the left:",
                     expression=f"{standard_lhs} {ineq_symbol_en} 0",
                 )
@@ -112,15 +113,13 @@ class LinearInequalityStepGenerator(StepGenerator):
         # Divide by coefficient
         if a != 1:
             solution_value = nsimplify(new_rhs / a)
-            
+
             # Check if we're dividing by a negative number (sign reversal!)
             if a < 0:
                 # Reverse the inequality sign
-                reversed_symbol_map = {
-                    '<': '>', '≤': '≥', '>': '<', '≥': '≤'
-                }
+                reversed_symbol_map = {"<": ">", "≤": "≥", ">": "<", "≥": "≤"}
                 new_ineq_symbol = reversed_symbol_map.get(ineq_symbol_en, ineq_symbol_en)
-                
+
                 steps.append(
                     SolutionStep(
                         order=order,
@@ -130,18 +129,17 @@ class LinearInequalityStepGenerator(StepGenerator):
                     )
                 )
                 order += 1
-                
+
                 # Update the final answer format
-                final_ineq_symbol_en = new_ineq_symbol
-                if new_ineq_symbol == '>':
+                if new_ineq_symbol == ">":
                     interval_notation = f"({_format_number(solution_value)}, ∞)"
                     solution_desc_km = f"{symbol} ធំជាង {_format_number(solution_value)}"
                     solution_desc_en = f"{symbol} > {_format_number(solution_value)}"
-                elif new_ineq_symbol == '≥':
+                elif new_ineq_symbol == "≥":
                     interval_notation = f"[{_format_number(solution_value)}, ∞)"
                     solution_desc_km = f"{symbol} ធំជាង ឬស្មើ {_format_number(solution_value)}"
                     solution_desc_en = f"{symbol} ≥ {_format_number(solution_value)}"
-                elif new_ineq_symbol == '<':
+                elif new_ineq_symbol == "<":
                     interval_notation = f"(-∞, {_format_number(solution_value)})"
                     solution_desc_km = f"{symbol} តូចជាង {_format_number(solution_value)}"
                     solution_desc_en = f"{symbol} < {_format_number(solution_value)}"
@@ -159,18 +157,17 @@ class LinearInequalityStepGenerator(StepGenerator):
                     )
                 )
                 order += 1
-                
+
                 # Determine interval notation based on inequality type
-                final_ineq_symbol_en = ineq_symbol_en
-                if ineq_symbol_en == '<':
+                if ineq_symbol_en == "<":
                     interval_notation = f"(-∞, {_format_number(solution_value)})"
                     solution_desc_km = f"{symbol} {ineq_symbol_km} {_format_number(solution_value)}"
                     solution_desc_en = f"{symbol} < {_format_number(solution_value)}"
-                elif ineq_symbol_en == '≤':
+                elif ineq_symbol_en == "≤":
                     interval_notation = f"(-∞, {_format_number(solution_value)}]"
                     solution_desc_km = f"{symbol} {ineq_symbol_km} {_format_number(solution_value)}"
                     solution_desc_en = f"{symbol} ≤ {_format_number(solution_value)}"
-                elif ineq_symbol_en == '>':
+                elif ineq_symbol_en == ">":
                     interval_notation = f"({_format_number(solution_value)}, ∞)"
                     solution_desc_km = f"{symbol} {ineq_symbol_km} {_format_number(solution_value)}"
                     solution_desc_en = f"{symbol} > {_format_number(solution_value)}"
@@ -180,18 +177,17 @@ class LinearInequalityStepGenerator(StepGenerator):
                     solution_desc_en = f"{symbol} ≥ {_format_number(solution_value)}"
         else:
             solution_value = new_rhs
-            final_ineq_symbol_en = ineq_symbol_en
-            
+
             # Determine interval notation
-            if ineq_symbol_en == '<':
+            if ineq_symbol_en == "<":
                 interval_notation = f"(-∞, {_format_number(solution_value)})"
-            elif ineq_symbol_en == '≤':
+            elif ineq_symbol_en == "≤":
                 interval_notation = f"(-∞, {_format_number(solution_value)}]"
-            elif ineq_symbol_en == '>':
+            elif ineq_symbol_en == ">":
                 interval_notation = f"({_format_number(solution_value)}, ∞)"
             else:  # ≥
                 interval_notation = f"[{_format_number(solution_value)}, ∞)"
-            
+
             solution_desc_km = f"{symbol} {ineq_symbol_km} {_format_number(solution_value)}"
             solution_desc_en = f"{symbol} {ineq_symbol_en} {_format_number(solution_value)}"
 

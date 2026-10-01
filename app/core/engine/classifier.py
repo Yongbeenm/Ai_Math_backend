@@ -4,6 +4,7 @@ both which step generator is used and what the API reports back in
 `problem_type`, so keep the set of values stable — the mobile app may
 eventually branch on it (e.g. to show a different icon per problem type).
 """
+
 from __future__ import annotations
 
 import sympy
@@ -14,11 +15,12 @@ from app.core.parser.expression_parser import ParsedMath
 
 def classify_problem(parsed: ParsedMath) -> str:
     expr = parsed.sympy_expr
-    
+
     # Check if it's an inequality (relational expression) - do this FIRST
     # before checking is_equation, since inequalities have is_equation=False
-    if isinstance(expr, (sympy.StrictLessThan, sympy.LessThan, 
-                        sympy.StrictGreaterThan, sympy.GreaterThan)):
+    if isinstance(
+        expr, (sympy.StrictLessThan, sympy.LessThan, sympy.StrictGreaterThan, sympy.GreaterThan)
+    ):
         if len(parsed.symbols) == 0:
             return "numeric_inequality"
         if len(parsed.symbols) > 1:
@@ -36,7 +38,7 @@ def classify_problem(parsed: ParsedMath) -> str:
                 return "polynomial_inequality"
         except Exception:
             return "unknown_inequality"
-    
+
     # Check if it's a calculus limit
     if isinstance(expr, Limit):
         return "calculus_limit"

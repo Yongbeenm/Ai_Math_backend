@@ -18,10 +18,11 @@ ever returned to the API layer — the steps shown here are a *description*
 of a computation SymPy already did, not a separate, potentially-wrong,
 free-form explanation.
 """
+
 from __future__ import annotations
 
 import sympy
-from sympy import Eq, Symbol, expand, sqrt, nsimplify
+from sympy import Eq, Symbol, expand, nsimplify, sqrt
 
 from app.core.engine.steps.base import StepGenerator
 from app.models.schemas import SolutionStep
@@ -87,12 +88,12 @@ class QuadraticStepGenerator(StepGenerator):
         order += 1
 
         # Calculate discriminant: Δ = b² - 4ac
-        discriminant = nsimplify(b**2 - 4*a*c)
+        discriminant = nsimplify(b**2 - 4 * a * c)
         steps.append(
             SolutionStep(
                 order=order,
-                description_km=f"គណនា​ឌីស្ក្រីមីណង់ Δ = b² - 4ac:",
-                description_en=f"Calculate discriminant Δ = b² - 4ac:",
+                description_km="គណនា​ឌីស្ក្រីមីណង់ Δ = b² - 4ac:",
+                description_en="Calculate discriminant Δ = b² - 4ac:",
                 expression=f"Δ = ({_format_number(b)})² - 4({_format_number(a)})({_format_number(c)}) = {_format_number(discriminant)}",
             )
         )
@@ -113,8 +114,8 @@ class QuadraticStepGenerator(StepGenerator):
 
             # Calculate both roots
             sqrt_discriminant = sqrt(discriminant)
-            root1 = nsimplify((-b + sqrt_discriminant) / (2*a))
-            root2 = nsimplify((-b - sqrt_discriminant) / (2*a))
+            root1 = nsimplify((-b + sqrt_discriminant) / (2 * a))
+            root2 = nsimplify((-b - sqrt_discriminant) / (2 * a))
 
             steps.append(
                 SolutionStep(
@@ -137,7 +138,7 @@ class QuadraticStepGenerator(StepGenerator):
             )
             order += 1
 
-            root = nsimplify(-b / (2*a))
+            root = nsimplify(-b / (2 * a))
             steps.append(
                 SolutionStep(
                     order=order,
@@ -161,8 +162,8 @@ class QuadraticStepGenerator(StepGenerator):
 
             # Still compute complex roots for completeness
             sqrt_neg_discriminant = sqrt(-discriminant)
-            real_part = nsimplify(-b / (2*a))
-            imag_part = nsimplify(sqrt_neg_discriminant / (2*a))
+            real_part = nsimplify(-b / (2 * a))
+            imag_part = nsimplify(sqrt_neg_discriminant / (2 * a))
 
             steps.append(
                 SolutionStep(

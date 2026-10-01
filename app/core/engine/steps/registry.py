@@ -5,6 +5,7 @@ To add support for a new topic later (quadratic, systems of equations,
 calculus, ...): write a class implementing StepGenerator in its own file,
 then add one line here. No other file needs to change.
 """
+
 from __future__ import annotations
 
 from app.core.engine.steps.base import StepGenerator
@@ -16,7 +17,8 @@ from app.core.engine.steps.quadratic import QuadraticStepGenerator
 from app.core.engine.steps.system import SystemStepGenerator
 
 _GENERATORS: dict[str, StepGenerator] = {
-    generator.problem_type: generator for generator in [
+    generator.problem_type: generator
+    for generator in [
         LinearStepGenerator(),
         QuadraticStepGenerator(),
         PolynomialStepGenerator(),

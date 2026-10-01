@@ -5,12 +5,11 @@ implement this interface later; the API endpoint and the rest of the
 pipeline downstream of it (parser -> engine -> Khmer explanation) do not
 need to change when that happens.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
-
 from typing import Any
 
 
@@ -25,3 +24,7 @@ class VisionResult:
 class MathVisionEngine(ABC):
     @abstractmethod
     def detect(self, image_bytes: bytes) -> VisionResult: ...
+
+
+# Convenient alias
+BaseVisionEngine = MathVisionEngine

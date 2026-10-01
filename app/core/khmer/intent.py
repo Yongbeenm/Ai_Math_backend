@@ -5,6 +5,7 @@ Intent classification for Khmer and English math requests.
 (fast, deterministic, zero dependencies) supporting natural phrasing in both
 Khmer and English.
 """
+
 from __future__ import annotations
 
 import re
@@ -26,20 +27,20 @@ class IntentClassifier(ABC):
 
 # Khmer phrasings for "solve for x" / "find the value of x"
 _SOLVE_KEYWORDS_KM = [
-    "ដោះស្រាយ",           # solve
-    "ជួយខ្ញុំដោះស្រាយ",      # help me solve
-    "ជួយដោះស្រាយ",         # help solve
-    "រកតម្លៃ",             # find the value
+    "ដោះស្រាយ",  # solve
+    "ជួយខ្ញុំដោះស្រាយ",  # help me solve
+    "ជួយដោះស្រាយ",  # help solve
+    "រកតម្លៃ",  # find the value
     "រក x",
-    "រក",                  # find
-    "ស្វែងរក",            # search/find
-    "តម្លៃប៉ុន្មាន",         # what is the value / how much
-    "តម្លៃ",               # value
-    "ណា",                  # what (in questions)
-    "គណនា",                # calculate/compute
-    "គិត",                 # calculate
-    "ស្វែងយក",            # seek/find
-    "ដោះ",                # solve (short form)
+    "រក",  # find
+    "ស្វែងរក",  # search/find
+    "តម្លៃប៉ុន្មាន",  # what is the value / how much
+    "តម្លៃ",  # value
+    "ណា",  # what (in questions)
+    "គណនា",  # calculate/compute
+    "គិត",  # calculate
+    "ស្វែងយក",  # seek/find
+    "ដោះ",  # solve (short form)
 ]
 
 # English phrasings for "solve"
@@ -56,11 +57,11 @@ _SOLVE_KEYWORDS_EN = [
 ]
 
 _SIMPLIFY_KEYWORDS_KM = [
-    "ធ្វើឲ្យសាមញ្ញ",      # simplify
-    "កាត់បន្ថយ",          # reduce
-    "សាមញ្ញ",             # simple
-    "បង្រួម",              # condense/reduce
-    "កាត់",                # cut/reduce
+    "ធ្វើឲ្យសាមញ្ញ",  # simplify
+    "កាត់បន្ថយ",  # reduce
+    "សាមញ្ញ",  # simple
+    "បង្រួម",  # condense/reduce
+    "កាត់",  # cut/reduce
 ]
 
 _SIMPLIFY_KEYWORDS_EN = [
@@ -73,11 +74,11 @@ _SIMPLIFY_KEYWORDS_EN = [
 ]
 
 _EVALUATE_KEYWORDS_KM = [
-    "គណនា",                # calculate
-    "គិត",                 # think/calculate
-    "ផ្ដល់ជូន",           # provide/give
-    "លទ្ធផល",             # result
-    "ចម្លើយ",              # answer
+    "គណនា",  # calculate
+    "គិត",  # think/calculate
+    "ផ្ដល់ជូន",  # provide/give
+    "លទ្ធផល",  # result
+    "ចម្លើយ",  # answer
 ]
 
 _EVALUATE_KEYWORDS_EN = [
@@ -92,27 +93,27 @@ _EVALUATE_KEYWORDS_EN = [
 ]
 
 _FRACTION_KEYWORDS = [
-    "ប្រភាគ",              # fraction
-    "ប្រភាគទសភាគ",         # decimal fraction
-    "ប្រភាគធម្មតា",         # common fraction
+    "ប្រភាគ",  # fraction
+    "ប្រភាគទសភាគ",  # decimal fraction
+    "ប្រភាគធម្មតា",  # common fraction
     "fraction",
     "fractions",
 ]
 
 _PERCENTAGE_KEYWORDS = [
-    "ភាគរយ",               # percentage
+    "ភាគរយ",  # percentage
     "%",
-    "ភាគ",                 # percent (short)
-    "ចំនួនភាគរយ",          # percentage amount
+    "ភាគ",  # percent (short)
+    "ចំនួនភាគរយ",  # percentage amount
     "percent",
     "percentage",
 ]
 
 _WORD_PROBLEM_KEYWORDS_KM = [
-    "បញ្ហា",               # problem
-    "សំណួរ",               # question
-    "លំហាត់",              # exercise
-    "តើ",                  # question marker
+    "បញ្ហា",  # problem
+    "សំណួរ",  # question
+    "លំហាត់",  # exercise
+    "តើ",  # question marker
 ]
 
 _WORD_PROBLEM_KEYWORDS_EN = [
@@ -154,7 +155,9 @@ class RuleBasedIntentClassifier(IntentClassifier):
             return MathIntent.SIMPLIFY_EXPRESSION
 
         # Priority 2: Equations (contains equals sign or inequality)
-        if "=" in normalized_text or any(op in normalized_text for op in ["<=", ">=", "<", ">", "≤", "≥"]):
+        if "=" in normalized_text or any(
+            op in normalized_text for op in ["<=", ">=", "<", ">", "≤", "≥"]
+        ):
             return MathIntent.SOLVE_EQUATION
 
         # Priority 3: Explicit solve keywords (Khmer and English)
@@ -166,7 +169,9 @@ class RuleBasedIntentClassifier(IntentClassifier):
             return MathIntent.EVALUATE_EXPRESSION
 
         # Priority 5: Word problem markers with numbers suggest evaluation
-        has_word_problem = _contains_word(text_lower, _WORD_PROBLEM_KEYWORDS_KM + _WORD_PROBLEM_KEYWORDS_EN)
+        has_word_problem = _contains_word(
+            text_lower, _WORD_PROBLEM_KEYWORDS_KM + _WORD_PROBLEM_KEYWORDS_EN
+        )
         has_numbers = bool(re.search(r"\d", normalized_text))
         if has_word_problem and has_numbers:
             return MathIntent.EVALUATE_EXPRESSION

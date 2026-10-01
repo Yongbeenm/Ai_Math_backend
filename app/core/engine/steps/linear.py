@@ -15,6 +15,7 @@ ever returned to the API layer — the steps shown here are a *description*
 of a computation SymPy already did, not a separate, potentially-wrong,
 free-form explanation.
 """
+
 from __future__ import annotations
 
 import sympy

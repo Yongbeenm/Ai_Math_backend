@@ -8,6 +8,7 @@ Extracts structured components from raw exercise text or OCR output:
 - Sub-problem itemization (e.g., "ក. 2x + 4 = 12", "ខ) 3x - 9 = 0", "a) ...", "b) ...")
 - Mathematical expression extraction
 """
+
 from __future__ import annotations
 
 import re
@@ -86,21 +87,48 @@ _MULTI_LETTER_WORD = re.compile(r"(?<!\\)\b[a-zA-Z]{2,}\b")
 
 # Math function and LaTeX names that must never be stripped as prose words
 _MATH_KEYWORDS = {
-    "sin", "cos", "tan", "cot", "sec", "csc",
-    "lim", "log", "ln", "exp", "det", "gcd",
-    "lcm", "mod", "max", "min", "sqrt", "deg",
-    "to", "rightarrow", "infty", "frac", "cdot",
-    "times", "div", "pm", "mp", "int", "sum", "prod"
+    "sin",
+    "cos",
+    "tan",
+    "cot",
+    "sec",
+    "csc",
+    "lim",
+    "log",
+    "ln",
+    "exp",
+    "det",
+    "gcd",
+    "lcm",
+    "mod",
+    "max",
+    "min",
+    "sqrt",
+    "deg",
+    "to",
+    "rightarrow",
+    "infty",
+    "frac",
+    "cdot",
+    "times",
+    "div",
+    "pm",
+    "mp",
+    "int",
+    "sum",
+    "prod",
 }
 
 
 def _strip_non_math_words(text: str) -> str:
     """Strip English prose words while preserving recognized mathematical functions."""
+
     def _rep(m: re.Match) -> str:
         word = m.group(0)
         if word.lower() in _MATH_KEYWORDS:
             return word
         return " "
+
     return _MULTI_LETTER_WORD.sub(_rep, text)
 
 
@@ -175,7 +203,9 @@ def parse_exercise(raw_text: str) -> ParsedExercise:
         )
 
     # 1. OCR sanitization + Khmer normalization
-    pre_cleaned = raw_text.replace(r"\operatorname*{lim}", r"\lim").replace(r"\operatorname{lim}", r"\lim")
+    pre_cleaned = raw_text.replace(r"\operatorname*{lim}", r"\lim").replace(
+        r"\operatorname{lim}", r"\lim"
+    )
     sanitized = sanitize_ocr_math_text(pre_cleaned)
     normalized = normalize_khmer_text(sanitized)
 
@@ -214,7 +244,7 @@ def parse_exercise(raw_text: str) -> ParsedExercise:
         match = sub_matches[0]
         if match.start() <= 2:
             label = next((g for g in match.groups() if g is not None), "")
-            sub_raw = body_text[match.end():].strip()
+            sub_raw = body_text[match.end() :].strip()
             sub_expr = _extract_single_math_expression(sub_raw)
             if sub_expr:
                 sub_intent = _intent_classifier.classify(sub_raw)

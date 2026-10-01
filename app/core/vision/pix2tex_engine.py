@@ -4,6 +4,7 @@ LaTeX-OCR (pix2tex) vision engine for mathematical formula recognition.
 Uses Lukas Blecher's LaTeX-OCR (ViT + ResNet encoder-decoder) to transcribe
 cropped images of mathematical equations directly into LaTeX code.
 """
+
 from __future__ import annotations
 
 from io import BytesIO
@@ -17,6 +18,7 @@ from app.core.vision.base import MathVisionEngine, VisionResult
 def clean_pix2tex_output(latex_code: str) -> str:
     """Clean and normalize raw LaTeX output from pix2tex."""
     import re
+
     t = (latex_code or "").strip()
     # Strip leading label artifacts like \mathcal{Q}. or 2. or a. or (a) before a formula
     t = re.sub(
@@ -35,8 +37,8 @@ def clean_pix2tex_output(latex_code: str) -> str:
     t = t.replace("s i n", r"\sin").replace("c o s", r"\cos").replace("t a n", r"\tan")
     # Normalize Greek letter chi to x when used as variable
     t = re.sub(r"\\chi\b", "x", t)
-    # Remove rogue aleph or noisy superscript artifacts
-    t = re.sub(r"\^\{?\\aleph\}?", "^", t)
+    # Remove rogue aleph, kappa, or noisy superscript artifacts from OCR
+    t = re.sub(r"\^\{?\\(aleph|kappa)\}?", "^", t)
     # Clean escaped spaces like '\ 15'
     t = re.sub(r"\\[\s]+", " ", t)
     if "lim_{" in t and r"\lim_{" not in t:
@@ -65,6 +67,7 @@ class Pix2TexVisionEngine(MathVisionEngine):
         """Lazy load model weights so app startup remains fast."""
         if self._model is None:
             from pix2tex.cli import LatexOCR
+
             self._model = LatexOCR()
         return self._model
 
@@ -89,6 +92,7 @@ class Pix2TexVisionEngine(MathVisionEngine):
                 )
 
             from app.core.khmer.exercise_parser import parse_exercise
+
             parsed_ex = parse_exercise(latex_code)
             clean_expr = parsed_ex.primary_expression or latex_code
 

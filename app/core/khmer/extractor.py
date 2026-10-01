@@ -7,6 +7,7 @@ words and math, e.g.:
 
 Uses the intelligent bilingual exercise parser with backward-compatible fallback.
 """
+
 from __future__ import annotations
 
 import re
@@ -38,6 +39,7 @@ def extract_expression(normalized_text: str) -> str | None:
 
     # Fallback to standard regex heuristic
     from app.core.khmer.exercise_parser import _strip_non_math_words
+
     text_without_words = _strip_non_math_words(normalized_text)
 
     candidates = _EXPRESSION_RUN.findall(text_without_words)

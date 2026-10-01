@@ -8,10 +8,11 @@ Supports systems of 2 or 3 equations with 2 or 3 unknowns using:
 
 Every solution is verified by substitution before being returned.
 """
+
 from __future__ import annotations
 
 import sympy
-from sympy import Eq, Symbol, solve, nsimplify
+from sympy import Eq, Symbol, nsimplify
 
 from app.core.engine.steps.base import StepGenerator
 from app.models.schemas import SolutionStep
@@ -35,23 +36,24 @@ def _format_number(value: sympy.Expr) -> str:
 class SystemStepGenerator(StepGenerator):
     """
     Step generator for systems of linear equations.
-    
+
     Note: This is a placeholder for the full system solver feature.
     Currently, the parser and classifier don't support multiple equations yet,
     so this won't be called until we extend the ParsedMath structure to handle
     multiple equations.
-    
+
     For now, this serves as the architecture for when we implement:
     1. Enhanced parser to detect and parse multiple equations (e.g., "2x+y=5, x-y=1")
     2. Extended classifier to identify system_of_equations
     3. Full step-by-step solution methods
     """
+
     problem_type = "system_of_equations"
 
     def generate(self, eq: Eq, symbol: Symbol) -> list[SolutionStep]:
         """
         Generate step-by-step solution for a system of equations.
-        
+
         Note: Current implementation is a placeholder. To fully implement:
         1. Extend ParsedMath to hold multiple equations
         2. Update this method signature to accept list[Eq] and list[Symbol]

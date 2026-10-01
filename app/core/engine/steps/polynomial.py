@@ -13,6 +13,7 @@ theorem), and we either factor or use numerical methods.
 
 Every solution is verified by substitution before being returned.
 """
+
 from __future__ import annotations
 
 import sympy

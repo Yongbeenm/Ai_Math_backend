@@ -5,6 +5,7 @@ Uses Google's Gemini Vision API (e.g. gemini-2.5-flash or gemini-1.5-flash) to
 transcribe, understand, and structure math exercises containing mixed Khmer
 and English script, formulas, and diagrams with high accuracy.
 """
+
 from __future__ import annotations
 
 import base64

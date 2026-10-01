@@ -14,6 +14,7 @@ Documentation / Source:
 - GitHub: https://github.com/mrrtmob/kiri-ocr
 - Hugging Face: https://huggingface.co/mrrtmob/kiri-ocr
 """
+
 from __future__ import annotations
 
 import os
@@ -22,6 +23,7 @@ from typing import Any
 
 try:
     from kiri_ocr import OCR
+
     KIRI_OCR_AVAILABLE = True
 except ImportError:
     OCR = None  # type: ignore[assignment]
@@ -61,9 +63,7 @@ class KiriVisionEngine(MathVisionEngine):
             ocr_instance: Optional pre-initialized OCR instance (useful for dependency injection and testing)
         """
         if not KIRI_OCR_AVAILABLE and ocr_instance is None:
-            raise ImportError(
-                "kiri-ocr is required. Install it with: pip install kiri-ocr"
-            )
+            raise ImportError("kiri-ocr is required. Install it with: pip install kiri-ocr")
 
         self.device = device
         self.decode_method = decode_method
@@ -96,6 +96,7 @@ class KiriVisionEngine(MathVisionEngine):
         # Preprocess image for OCR (CLAHE contrast, upscaling, denoising)
         try:
             from app.core.vision.preprocessor import preprocess_image
+
             processed_bytes = preprocess_image(image_bytes, mode="enhanced_grayscale")
         except Exception:
             processed_bytes = image_bytes

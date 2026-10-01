@@ -3,6 +3,7 @@ Deterministic verification: never trust a solution (whether it came from
 SymPy or, eventually, from an AI model) without substituting it back into
 the original equation and checking the two sides are actually equal.
 """
+
 from __future__ import annotations
 
 import sympy

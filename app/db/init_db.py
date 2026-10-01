@@ -1,6 +1,7 @@
 """Creates tables if they don't exist yet. Called from the FastAPI lifespan
 on startup. For a real migration history later, swap this for Alembic —
 nothing else needs to change since the ORM models stay the same."""
+
 import asyncio
 
 from app.db.session import engine

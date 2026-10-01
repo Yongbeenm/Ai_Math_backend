@@ -1,5 +1,6 @@
 """Normalize raw Khmer math text into a canonical form the rest of the
 pipeline (intent classifier, expression extractor, parser) can rely on."""
+
 import re
 import unicodedata
 
@@ -24,28 +25,19 @@ def convert_percentages_to_decimals(text: str) -> str:
       "20ភាគរយ" -> "0.20"
       "20 ភាគរយ" -> "0.20"
       "150.5%" -> "1.505"
-    
+
     Also handles common phrases like "X% of Y" -> "(X/100) * Y"
     """
     # Handle "X% of Y" or "X ភាគរយ នៃ Y" patterns
     # Match patterns like "20% of 150" or "20 ភាគរយ នៃ 150"
-    text = re.sub(
-        r'(\d+(?:\.\d+)?)\s*%\s*(?:of|នៃ)\s+',
-        r'(\1/100)*',
-        text,
-        flags=re.IGNORECASE
-    )
-    text = re.sub(
-        r'(\d+(?:\.\d+)?)\s*ភាគរយ\s*(?:of|នៃ)\s+',
-        r'(\1/100)*',
-        text
-    )
-    
+    text = re.sub(r"(\d+(?:\.\d+)?)\s*%\s*(?:of|នៃ)\s+", r"(\1/100)*", text, flags=re.IGNORECASE)
+    text = re.sub(r"(\d+(?:\.\d+)?)\s*ភាគរយ\s*(?:of|នៃ)\s+", r"(\1/100)*", text)
+
     # Handle standalone percentages: "20%" -> "(20/100)" or "0.20"
     # We use (X/100) format to preserve precision with SymPy
-    text = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'(\1/100)', text)
-    text = re.sub(r'(\d+(?:\.\d+)?)\s*ភាគរយ', r'(\1/100)', text)
-    
+    text = re.sub(r"(\d+(?:\.\d+)?)\s*%", r"(\1/100)", text)
+    text = re.sub(r"(\d+(?:\.\d+)?)\s*ភាគរយ", r"(\1/100)", text)
+
     return text
 
 

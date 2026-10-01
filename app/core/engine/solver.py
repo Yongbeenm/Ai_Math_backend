@@ -6,6 +6,7 @@ simplify) and *how* to narrate it (a registered StepGenerator, or a generic
 fallback). The AI/Khmer-explanation layer never invents the answer itself —
 it only rephrases what this deterministic engine already verified.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -29,11 +30,12 @@ class SolveResult:
 
 def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
     expr = parsed.sympy_expr
-    
+
     # Check if it's an inequality
-    is_inequality = isinstance(expr, (sympy.StrictLessThan, sympy.LessThan,
-                                     sympy.StrictGreaterThan, sympy.GreaterThan))
-    
+    is_inequality = isinstance(
+        expr, (sympy.StrictLessThan, sympy.LessThan, sympy.StrictGreaterThan, sympy.GreaterThan)
+    )
+
     if is_inequality:
         # Handle inequality
         if not parsed.symbols:
@@ -52,9 +54,9 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
                     )
                 ],
             )
-        
+
         symbol = parsed.symbols[0]
-        
+
         # Try to solve the inequality
         try:
             solutions = sympy.solve(expr, symbol)
@@ -65,7 +67,7 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
                 answer_str = "No solution"
         except Exception:
             answer_str = "Unable to solve"
-        
+
         # Get step generator if available
         generator = get_step_generator(problem_type)
         if generator is not None:
@@ -79,14 +81,14 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
                     expression=f"{expr}  →  {answer_str}",
                 )
             ]
-        
+
         return SolveResult(
             answer=answer_str,
             variable=str(symbol),
             is_verified=True,  # Inequalities are harder to verify, trust SymPy
             steps=steps,
         )
-    
+
     # Check if it's a calculus limit
     is_limit = (
         problem_type == "calculus_limit"
@@ -129,11 +131,11 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
     if not parsed.is_equation:
         # Pure arithmetic/algebraic expression: simplify, don't "solve".
         simplified = sympy.simplify(expr)
-        
+
         # Detect if this is a fraction or percentage operation
         raw_text = parsed.raw_text.lower()
         is_fraction_operation = "/" in raw_text or "(" in raw_text
-        
+
         # Create appropriate description
         if is_fraction_operation:
             description_km = "គណនាប្រភាគ៖"
@@ -141,7 +143,7 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
         else:
             description_km = "គណនាកន្សោម៖"
             description_en = "Evaluate the expression:"
-        
+
         return SolveResult(
             answer=str(simplified),
             variable=None,
@@ -165,7 +167,7 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
             is_true = bool(eq)
         else:
             is_true = bool(sympy.simplify(eq.lhs - eq.rhs) == 0)
-        
+
         return SolveResult(
             answer="true" if is_true else "false",
             variable=None,
@@ -206,7 +208,9 @@ def solve(parsed: ParsedMath, problem_type: str) -> SolveResult:
         ]
 
     return SolveResult(
-        answer=", ".join(str(s) for s in solutions) if len(solutions) > 1 else str(primary_solution),
+        answer=", ".join(str(s) for s in solutions)
+        if len(solutions) > 1
+        else str(primary_solution),
         variable=str(symbol),
         is_verified=is_verified,
         steps=steps,
