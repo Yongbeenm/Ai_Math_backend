@@ -41,6 +41,8 @@ def clean_pix2tex_output(latex_code: str) -> str:
     t = re.sub(r"\^\{?\\(aleph|kappa)\}?", "^", t)
     # Clean escaped spaces like '\ 15'
     t = re.sub(r"\\[\s]+", " ", t)
+    # Normalize \times recognized as variable x (e.g. 12\times=25 -> 12x=25)
+    t = re.sub(r"(?<=\d)\\times(?=[=+\-*/<>]|\s|$)", "x", t)
     if "lim_{" in t and r"\lim_{" not in t:
         t = t.replace("lim_{", r"\lim_{")
     return t.strip()
