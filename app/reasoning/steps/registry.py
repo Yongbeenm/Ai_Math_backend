@@ -9,16 +9,16 @@ then add one line here. No other file needs to change.
 from __future__ import annotations
 
 from app.reasoning.steps.base import StepGenerator
-from app.reasoning.steps.calculus_derivative import DerivativeStepGenerator
-from app.reasoning.steps.calculus_integral import IntegralStepGenerator
-from app.reasoning.steps.calculus_limit import LimitStepGenerator
-from app.reasoning.steps.expansion import ExpansionStepGenerator
-from app.reasoning.steps.inequality import LinearInequalityStepGenerator
-from app.reasoning.steps.linear import LinearStepGenerator
-from app.reasoning.steps.logarithm import LogarithmStepGenerator
-from app.reasoning.steps.polynomial import PolynomialStepGenerator
-from app.reasoning.steps.quadratic import QuadraticStepGenerator
-from app.reasoning.steps.system import SystemStepGenerator
+from app.reasoning.steps.calculus.derivative import DerivativeStepGenerator
+from app.reasoning.steps.calculus.integral import IntegralStepGenerator
+from app.reasoning.steps.calculus.limit import LimitStepGenerator
+from app.reasoning.steps.algebra.expansion import ExpansionStepGenerator
+from app.reasoning.steps.algebra.inequality import LinearInequalityStepGenerator
+from app.reasoning.steps.algebra.linear import LinearStepGenerator
+from app.reasoning.steps.algebra.logarithm import LogarithmStepGenerator
+from app.reasoning.steps.algebra.polynomial import PolynomialStepGenerator
+from app.reasoning.steps.algebra.quadratic import QuadraticStepGenerator
+from app.reasoning.steps.algebra.system import SystemStepGenerator
 
 _expansion_gen = ExpansionStepGenerator()
 _logarithm_gen = LogarithmStepGenerator()

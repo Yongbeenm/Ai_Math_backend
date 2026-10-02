@@ -21,7 +21,7 @@ from app.core.logging import get_logger
 from app.ocr.extraction.base import MathVisionEngine, VisionResult
 from app.ocr.extraction.factory import create_vision_engine
 
-logger = get_logger("app.core.vision.router")
+logger = get_logger("app.ocr.extraction.router")
 
 
 class ImageAnalyzer:

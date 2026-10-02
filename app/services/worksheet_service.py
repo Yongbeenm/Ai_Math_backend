@@ -14,8 +14,12 @@ from typing import Any
 from app.api.schemas.responses import SolveData
 from app.classifier.context_aware_classifier import ContextAwareClassifier
 from app.classifier.problem_classifier.classifier import classify_problem
-from app.core.vision.base import MathVisionEngine, VisionResult
-from app.core.vision.factory import create_vision_engine
+from app.core.logging import get_logger
+from app.core.tasks import TaskStatus, get_task, submit_task, update_task_progress
+from app.ocr.engines.base import MathVisionEngine, VisionResult
+from app.ocr.factory import create_vision_engine
+
+logger = get_logger("app.services.worksheet")
 from app.models.document import Exercise, Problem
 from app.parser.math_parser.expression_parser import ExpressionParseError, parse_math_text
 from app.services.exercise_service import ExerciseService, ProcessingResult
@@ -137,6 +141,28 @@ class WorksheetProcessor:
         self.exercise_service = exercise_service or ExerciseService()
         self.math_service = math_service or MathService()
         self.context_classifier = ContextAwareClassifier()
+
+    async def process_image_async(self, image_bytes: bytes) -> str:
+        """
+        Submit worksheet processing as a background task.
+
+        Returns a task_id that can be polled for results. Use this for
+        large worksheets to avoid blocking the HTTP request.
+
+        Args:
+            image_bytes: Raw image bytes (PNG, JPEG, etc.)
+
+        Returns:
+            task_id: Unique identifier for polling the result
+        """
+
+        async def _process() -> dict[str, Any]:
+            result = self.process_image(image_bytes)
+            return result.to_dict()
+
+        task_id = await submit_task(_process)
+        logger.info(f"Worksheet processing submitted as task {task_id}")
+        return task_id
 
     def process_image(self, image_bytes: bytes) -> WorksheetResult:
         """

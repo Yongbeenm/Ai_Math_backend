@@ -20,7 +20,7 @@ import Levenshtein
 from app.core.logging import get_logger
 from app.ocr.extraction.base import MathVisionEngine
 
-logger = get_logger("app.core.vision.evaluation")
+logger = get_logger("app.ocr.extraction.evaluation")
 
 
 @dataclass

@@ -76,9 +76,9 @@ exclude = ["venv", "\\.venv", "tests"]
 [tool.coverage.run]
 source = ["app"]
 omit = [
-    "app/core/vision/gemini_vision.py",
-    "app/core/vision/google_vision.py",
-    "app/core/vision/mathpix.py",
+    "app/ocr/extraction/gemini_vision.py",
+    "app/ocr/extraction/google_vision.py",
+    "app/ocr/extraction/mathpix.py",
 ]
 
 [tool.coverage.report]

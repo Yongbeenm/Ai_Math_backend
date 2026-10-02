@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from app.config import get_settings
 from app.core.exceptions import MathProcessingError, VisionProcessingError
 from app.core.logging import get_logger
-from app.core.vision.base import BaseVisionEngine
-from app.core.vision.factory import create_vision_engine
-from app.core.vision.stub import NotImplementedVisionEngine
+from app.ocr.engines.base import BaseVisionEngine
+from app.ocr.factory import create_vision_engine
+from app.ocr.engines.stub import NotImplementedVisionEngine
 from app.models.schemas import APIResponse
 from app.services.math_service import MathService, get_math_service
 from app.services.vision_service import VisionService

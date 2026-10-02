@@ -39,6 +39,7 @@ env/
 *.db
 *.sqlite
 *.sqlite3
+data/
 
 # Testing & Coverage
 .pytest_cache/

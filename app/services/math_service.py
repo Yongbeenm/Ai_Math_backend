@@ -16,11 +16,15 @@ from app.classifier.problem_classifier.intent_classifier import (
     MathIntent,
     RuleBasedIntentClassifier,
 )
+from app.core.cache import get_solve_cache
+from app.core.logging import get_logger
 from app.parser.expression_parser.khmer_extractor import extract_expression
 from app.parser.expression_parser.khmer_normalizer import normalize_khmer_text
 from app.parser.math_parser.expression_parser import ExpressionParseError, parse_math_text
 from app.solvers import solve
 from app.utils.exceptions import MathProcessingError
+
+logger = get_logger("app.services.math")
 
 # Re-export MathProcessingError for backward compatibility
 __all__ = ["MathProcessingError", "MathService", "get_math_service", "process_question"]
@@ -95,9 +99,17 @@ class MathService:
         elif any(kw in q_lower for kw in ["ដេរីវេ", "derivative", "differentiate", "derive"]):
             problem_type = "calculus_derivative"
 
-        result = solve(parsed, problem_type)
+        # Check cache before solving
+        cache = get_solve_cache()
+        cache_key_expr = f"{raw_expression}::{problem_type}"
+        result = cache.get(cache_key_expr, problem_type)
+        if result is not None:
+            logger.debug(f"Cache hit for '{raw_expression}' ({problem_type})")
+        else:
+            result = solve(parsed, problem_type)
+            cache.put(cache_key_expr, result, problem_type)
 
-        return SolveData(
+        solve_data = SolveData(
             problem_type=problem_type,
             original_question=question,
             detected_intent=intent.value,
@@ -108,6 +120,7 @@ class MathService:
             steps=result.steps,
             lesson_info=result.lesson_info or result.metadata.get("lesson_info"),
         )
+        return solve_data
 
 
 @lru_cache

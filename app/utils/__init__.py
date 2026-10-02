@@ -1,14 +1,14 @@
 """
-Utilities - Common utility functions and classes.
+Utilities - Backward-compatible re-exports.
 
-Includes:
-- Custom exceptions
-- Logging configuration
-- Middleware
+DEPRECATED: Import directly from app.core instead:
+  - app.core.exceptions: AppException, MathProcessingError, VisionProcessingError
+  - app.core.logging: get_logger, setup_logging
+  - app.core.middleware: RequestCorrelationMiddleware
 """
 
-from app.utils.exceptions import MathProcessingError, VisionProcessingError
-from app.utils.logging import get_logger, setup_logging
+from app.core.exceptions import MathProcessingError, VisionProcessingError
+from app.core.logging import get_logger, setup_logging
 
 __all__ = [
     "MathProcessingError",

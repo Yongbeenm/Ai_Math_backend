@@ -14,7 +14,7 @@ from functools import lru_cache
 
 from app.core.khmer.digits import khmer_digits_to_arabic
 from app.core.khmer.normalizer import convert_percentages_to_decimals, normalize_khmer_text
-from app.core.vision.postprocessor import sanitize_ocr_math_text
+from app.ocr.normalization.ocr_postprocessor import sanitize_ocr_math_text
 from app.models.problem import NormalizationResult, NormalizationStep
 
 

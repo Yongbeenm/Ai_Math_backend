@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import sympy
 from sympy import Eq, symbols
 
-from app.core.verification.verifier import SolutionVerifier, VerificationResult
+from app.verification.verifier import SolutionVerifier, VerificationResult
 
 
 def demonstrate_equation_verification():

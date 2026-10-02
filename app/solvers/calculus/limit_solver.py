@@ -9,7 +9,7 @@ from sympy import Eq, Limit, Symbol
 
 from app.api.schemas.responses import SolutionStep
 from app.parser.math_parser.expression_parser import ParsedMath
-from app.reasoning.steps.calculus_limit import detect_limit_method
+from app.reasoning.steps.calculus.limit import detect_limit_method
 from app.solvers.base import BaseSolver, SolveResult
 
 

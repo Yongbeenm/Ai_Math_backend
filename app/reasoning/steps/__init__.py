@@ -1,16 +1,12 @@
 """
-Step Generators - Generate step-by-step solutions for different problem types.
+Step Generators — Generate step-by-step solutions for different problem types.
 
 Each generator produces a sequence of steps showing the reasoning process
 from problem to solution.
 
-Available generators:
-- Linear equations
-- Quadratic equations
-- Polynomial equations
-- Systems of equations
-- Inequalities
-- Calculus (limits)
+Subpackages:
+- algebra/   — Linear, quadratic, polynomial, inequality, system, expansion, logarithm
+- calculus/  — Derivative, integral, limit
 """
 
 from app.reasoning.steps.base import StepGenerator

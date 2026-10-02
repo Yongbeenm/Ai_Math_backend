@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 from app.core.khmer.intent import MathIntent, RuleBasedIntentClassifier
 from app.core.khmer.normalizer import normalize_khmer_text
-from app.core.vision.postprocessor import sanitize_ocr_math_text
+from app.ocr.normalization.ocr_postprocessor import sanitize_ocr_math_text
 
 _intent_classifier = RuleBasedIntentClassifier()
 

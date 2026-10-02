@@ -28,7 +28,7 @@ from app.explanation.templates.factorization import (
 )
 from app.knowledge.models import LessonMetadata
 from app.knowledge.registry import get_knowledge_registry
-from app.reasoning.steps.expansion import ExpansionStepGenerator
+from app.reasoning.steps.algebra.expansion import ExpansionStepGenerator
 
 
 class ExplanationEngine:

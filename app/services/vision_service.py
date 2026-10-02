@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.models.problem import MathProblem, MultiProblemSet, ProblemSource
-from app.ocr.extraction.base import BaseVisionEngine, VisionResult
+from app.ocr.engines.base import BaseVisionEngine, VisionResult
 from app.parser.exercise_parser.exercise_parser import parse_exercise
 from app.reasoning.solution_builder.problem_builder import ProblemBuilder
 from app.services.math_service import MathService

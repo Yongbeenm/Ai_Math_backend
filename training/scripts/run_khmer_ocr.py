@@ -20,7 +20,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from app.core.vision.factory import create_vision_engine, list_available_providers
+from app.ocr.factory import create_vision_engine, list_available_providers
 from app.services.math_service import MathProcessingError, process_question
 
 

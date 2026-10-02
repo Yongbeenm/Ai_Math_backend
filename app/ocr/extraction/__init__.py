@@ -1,21 +1,19 @@
 """
-OCR Extraction - Multiple OCR engine implementations.
+OCR Extraction — DEPRECATED compatibility layer.
 
-Supported engines:
-- Kiri OCR (custom trained)
-- Google Vision API
-- Gemini Vision
-- Mathpix
-- Pix2Tex
-- Tesseract
-- Ensemble (multiple engines voting)
+This package is kept for backward compatibility only.
+New code should import from:
+  - app.ocr.engines   (OCR engine implementations)
+  - app.ocr.pipeline  (processing stages)
+  - app.ocr.factory   (engine creation)
 """
 
-from app.ocr.extraction.base import BaseVisionEngine, VisionResult
-from app.ocr.extraction.factory import create_vision_engine, list_available_providers
+from app.ocr.engines.base import BaseVisionEngine, MathVisionEngine, VisionResult
+from app.ocr.factory import create_vision_engine, list_available_providers
 
 __all__ = [
     "BaseVisionEngine",
+    "MathVisionEngine",
     "VisionResult",
     "create_vision_engine",
     "list_available_providers",

@@ -216,7 +216,7 @@ class ExpressionEvaluator(BaseSolver):
                 )
             )
         ):
-            from app.reasoning.steps.logarithm import LogarithmStepGenerator
+            from app.reasoning.steps.algebra.logarithm import LogarithmStepGenerator
 
             real_subs = {s: sympy.Symbol(s.name, real=True) for s in expr.free_symbols}
             evaluated = expr.subs(real_subs).simplify() if hasattr(expr, "subs") else expr

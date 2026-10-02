@@ -111,7 +111,7 @@ class IntegralSolver(BaseSolver):
                 integrand = integral_obj.args[0]
                 method_id = detect_integral_method(integral_obj, var)
                 if method_id == "method_integral_by_parts":
-                    from app.reasoning.steps.calculus_integral import (
+                    from app.reasoning.steps.calculus.integral import (
                         _decompose_by_parts,
                         _integrate_linear_pow,
                     )
@@ -203,7 +203,7 @@ class IntegralSolver(BaseSolver):
     ) -> SolveResult:
         """Solve particular antiderivative problem given initial condition F(x0) = y0."""
         from app.knowledge.registry import get_knowledge_registry
-        from app.reasoning.steps.calculus_integral import IntegralStepGenerator
+        from app.reasoning.steps.calculus.integral import IntegralStepGenerator
 
         antideriv = sympy.integrate(integrand, var)
         G_x0 = antideriv.subs(var, x0)
@@ -240,7 +240,7 @@ class IntegralSolver(BaseSolver):
     ) -> SolveResult:
         """Verify whether F(x) is an antiderivative of f(x) by showing F'(x) = f(x)."""
         from app.knowledge.registry import get_knowledge_registry
-        from app.reasoning.steps.calculus_integral import IntegralStepGenerator
+        from app.reasoning.steps.calculus.integral import IntegralStepGenerator
 
         F_deriv = sympy.diff(F_expr, var)
         is_verified = bool(sympy.simplify(F_deriv - f_expr) == 0)
