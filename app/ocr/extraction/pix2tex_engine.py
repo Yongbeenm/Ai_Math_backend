@@ -272,7 +272,7 @@ class Pix2TexVisionEngine(MathVisionEngine):
             binary = gray < 200
             row_counts = np.sum(binary, axis=1)
 
-            max_search_y = int(h * 0.55)
+            max_search_y = int(h * 0.65)
             gap_start = None
             for y in range(15, max_search_y):
                 if row_counts[y] <= 2:
@@ -286,6 +286,11 @@ class Pix2TexVisionEngine(MathVisionEngine):
                             if ink_above > 40:
                                 return gap_start + gap_len // 2
                         gap_start = None
+
+            if gap_start is not None:
+                gap_len = max_search_y - gap_start
+                if gap_len >= 12 and np.sum(row_counts[:gap_start]) > 40:
+                    return gap_start + gap_len // 2
         except Exception:
             pass
         return None

@@ -343,9 +343,14 @@ class DerivativeStepGenerator(StepGenerator):
         self, func_expr: Any, var: Symbol, func_name: str, deriv_name: str, final_ans: Any
     ) -> list[SolutionStep]:
         """
-        Steps for sum/diff with exponential and quotient.
-        Matches exact Cambodian BacII format from explain.png.
+        Steps for exponential functions (both product rule u*e^v and sum/diff quotient).
+        Matches exact Cambodian BacII format.
         """
+        if isinstance(func_expr, Mul) and func_expr.has(exp):
+            return self._generate_product_exponential_steps(
+                func_expr, var, func_name, deriv_name, final_ans
+            )
+
         steps: list[SolutionStep] = []
 
         # Step 1: Identify function
@@ -423,6 +428,108 @@ class DerivativeStepGenerator(StepGenerator):
                 description_km=f"ដូចនេះ ${deriv_name} = {latex(final_ans)}$",
                 description_en=f"Therefore, ${deriv_name} = {latex(final_ans)}$",
                 expression=f"{deriv_name} = {latex(final_ans)}",
+            )
+        )
+
+        return steps
+
+    def _generate_product_exponential_steps(
+        self, func_expr: Any, var: Symbol, func_name: str, deriv_name: str, final_ans: Any
+    ) -> list[SolutionStep]:
+        """
+        Steps for product of polynomial/expression and exponential: (u * e^w)' = u' e^w + u (e^w)'.
+        Matches Grade 12 BacII textbook pedagogy for exercises like image3.png.
+        """
+        steps: list[SolutionStep] = []
+
+        # Separate exponential factor from remaining factors
+        exp_factor = None
+        other_factors = []
+        if isinstance(func_expr, Mul):
+            for arg in func_expr.args:
+                if arg.has(exp) and exp_factor is None:
+                    exp_factor = arg
+                else:
+                    other_factors.append(arg)
+        else:
+            exp_factor = func_expr
+            other_factors = [1]
+
+        u = Mul(*other_factors)
+        v = exp_factor
+        u_prime = sympy.diff(u, var)
+        v_prime = sympy.diff(v, var)
+        expanded_sum = u_prime * v + u * v_prime
+
+        # Step 1: Identify function
+        steps.append(
+            SolutionStep(
+                order=1,
+                title_km="កំណត់អនុគមន៍ដើម",
+                title_en="Identify Given Function",
+                description_km=f"យើងមានអនុគមន៍ ${_to_latex(func_name)} = {_to_latex(func_expr)}$។",
+                description_en=f"Given the function ${_to_latex(func_name)} = {_to_latex(func_expr)}$.",
+                expression=f"{func_name} = {_to_latex(func_expr)}",
+            )
+        )
+
+        # Step 2: Apply product rule
+        steps.append(
+            SolutionStep(
+                order=2,
+                title_km="អនុវត្តវិធានផលគុណ",
+                title_en="Apply Product Rule",
+                description_km=(
+                    f"អនុវត្តវិធានផលគុណ $(uv)' = u'v + uv'$ ចំពោះ "
+                    f"$u = {_to_latex(u)}, v = {_to_latex(v)}$។"
+                ),
+                description_en=(
+                    f"Apply product rule $(uv)' = u'v + uv'$ where "
+                    f"$u = {_to_latex(u)}, v = {_to_latex(v)}$."
+                ),
+                expression=f"{deriv_name} = ({_to_latex(u)})'({_to_latex(v)}) + ({_to_latex(u)})({_to_latex(v)})'",
+            )
+        )
+
+        # Step 3: Differentiate each factor
+        steps.append(
+            SolutionStep(
+                order=3,
+                title_km="គណនាដេរីវេនៃកត្តានីមួយៗ",
+                title_en="Differentiate Each Factor",
+                description_km=(
+                    f"គណនា $u' = ({_to_latex(u)})' = {_to_latex(u_prime)}$ និង "
+                    f"$v' = ({_to_latex(v)})' = {_to_latex(v_prime)}$ គេបាន ៖"
+                ),
+                description_en=(
+                    f"Differentiate factors: $u' = ({_to_latex(u)})' = {_to_latex(u_prime)}$ and "
+                    f"$v' = ({_to_latex(v)})' = {_to_latex(v_prime)}$:"
+                ),
+                expression=f"{deriv_name} = ({_to_latex(u_prime)})({_to_latex(v)}) + ({_to_latex(u)})({_to_latex(v_prime)}) = {_to_latex(expanded_sum)}",
+            )
+        )
+
+        # Step 4: Factor common terms
+        steps.append(
+            SolutionStep(
+                order=4,
+                title_km="ដាក់ជាផលគុណកត្តា",
+                title_en="Factor Common Terms",
+                description_km="ទាញកត្តារួមនៃអនុគមន៍អិចស្បូណង់ស្យែល ៖",
+                description_en="Factor out common exponential terms:",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
+            )
+        )
+
+        # Step 5: Final conclusion
+        steps.append(
+            SolutionStep(
+                order=5,
+                title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
+                title_en="State Final Derivative Result",
+                description_km=f"ដូចនេះ ${deriv_name} = {_to_latex(final_ans)}$",
+                description_en=f"Therefore, ${deriv_name} = {_to_latex(final_ans)}$",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
             )
         )
 

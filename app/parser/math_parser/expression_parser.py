@@ -136,11 +136,20 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
         else:
             lhs = latex2sympy(lhs_clean)
         rhs = latex2sympy(rhs_text.strip())
-        return Eq(lhs, rhs), True
+        res_eq = Eq(lhs, rhs)
+        if hasattr(res_eq, "free_symbols"):
+            e_syms = [s for s in res_eq.free_symbols if s.name in ("e", r"\mathrm{e}")]
+            if e_syms:
+                res_eq = res_eq.subs({s: sympy.E for s in e_syms})
+        return res_eq, True
     else:
         expr = latex2sympy(text.strip())
         if isinstance(expr, (list, tuple)):
             expr = expr[0]
+        if hasattr(expr, "free_symbols"):
+            e_syms = [s for s in expr.free_symbols if s.name in ("e", r"\mathrm{e}")]
+            if e_syms:
+                expr = expr.subs({s: sympy.E for s in e_syms})
         return expr, isinstance(expr, Eq)
 
 
@@ -208,6 +217,11 @@ def parse_math_text(raw_expression: str) -> ParsedMath:
             except Exception:
                 pass
         raise ExpressionParseError(f"Could not parse expression: {raw_expression!r}") from exc
+
+    if hasattr(expr, "free_symbols"):
+        e_syms = [s for s in expr.free_symbols if s.name in ("e", r"\mathrm{e}")]
+        if e_syms:
+            expr = expr.subs({s: sympy.E for s in e_syms})
 
     symbols = _extract_symbols(expr)
     return ParsedMath(

@@ -249,6 +249,9 @@ def detect_derivative_method(expr: Any, var: Any = None) -> str:
     import sympy
     from sympy import Add, Pow, Symbol, exp
 
+    if hasattr(expr, "rhs") and hasattr(expr, "lhs"):
+        expr = expr.rhs if expr.rhs != 0 else expr.lhs
+
     if var is None:
         symbols = list(expr.free_symbols) if hasattr(expr, "free_symbols") else []
         var = symbols[0] if symbols else Symbol("x")

@@ -155,3 +155,62 @@ def test_derivative_solver_image2_quotient_log():
         assert r"\log" not in step.expression
         assert r"\log" not in step.description_km
 
+
+def test_derivative_solver_image3_sub_k_product_exp():
+    r"""Test image3.png sub-exercise ក: y = x e^{-x} -> y' = -(x - 1)e^{-x}."""
+    parsed = parse_math_text(r"y = x e^{-x}")
+    solver = get_solver("calculus_derivative")
+    assert solver is not None
+
+    result = solver.solve(parsed, "calculus_derivative")
+    assert result.answer is not None
+    assert len(result.steps) == 5
+
+    # Check mathematical correctness
+    x = Symbol("x")
+    expected = -(x - 1) * sympy.exp(-x)
+    ans_expr = sympy.sympify(result.answer)
+    assert sympy.simplify(ans_expr - expected) == 0
+
+    # Lesson awareness: exponential rule
+    assert result.lesson_info is not None
+    assert result.lesson_info["method_id"] == "method_derivative_exponential"
+    assert "អិចស្បូណង់ស្យែល" in result.lesson_info["method_km"]
+
+    # Pedagogical steps in Khmer BacII format
+    assert "កំណត់អនុគមន៍ដើម" in result.steps[0].title_km
+    assert "អនុវត្តវិធានផលគុណ" in result.steps[1].title_km
+    assert "គណនាដេរីវេនៃកត្តានីមួយៗ" in result.steps[2].title_km
+    assert "ដាក់ជាផលគុណកត្តា" in result.steps[3].title_km
+    assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
+
+
+def test_derivative_solver_image3_sub_kh_product_exp():
+    r"""Test image3.png sub-exercise ខ: f(x) = x^2 e^x -> f'(x) = x(x + 2)e^x."""
+    parsed = parse_math_text(r"f(x) = x^2 e^x")
+    solver = get_solver("calculus_derivative")
+    assert solver is not None
+
+    result = solver.solve(parsed, "calculus_derivative")
+    assert result.answer is not None
+    assert len(result.steps) == 5
+
+    # Check mathematical correctness
+    x = Symbol("x")
+    expected = x * (x + 2) * sympy.exp(x)
+    ans_expr = sympy.sympify(result.answer)
+    assert sympy.simplify(ans_expr - expected) == 0
+
+    # Lesson awareness: exponential rule
+    assert result.lesson_info is not None
+    assert result.lesson_info["method_id"] == "method_derivative_exponential"
+    assert "អិចស្បូណង់ស្យែល" in result.lesson_info["method_km"]
+
+    # Pedagogical steps in Khmer BacII format
+    assert "កំណត់អនុគមន៍ដើម" in result.steps[0].title_km
+    assert "អនុវត្តវិធានផលគុណ" in result.steps[1].title_km
+    assert "គណនាដេរីវេនៃកត្តានីមួយៗ" in result.steps[2].title_km
+    assert "ដាក់ជាផលគុណកត្តា" in result.steps[3].title_km
+    assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
+
+
