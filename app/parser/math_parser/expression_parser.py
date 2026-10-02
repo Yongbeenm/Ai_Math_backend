@@ -52,6 +52,7 @@ def _clean_latex_text(text: str) -> str:
     t = text.strip()
     t = t.replace("{(}", "(").replace("{)}", ")")
     t = t.replace("{[}", "[").replace("{]}", "]")
+    t = re.sub(r"\\underline\{\s*\{*\s*=\s*\}*\s*\}", "=", t)
     t = re.sub(r"([+\-=])\{\s*(\\frac\{[^{}]*\}\{[^{}]*\})\s*\}", r"\1\2", t)
     # Strip leading label prefix like \mathcal{Q}. or 2. or a. or (a) before a formula
     t = re.sub(

@@ -18,7 +18,7 @@ from app.solvers.registry import get_solver
 
 
 def test_derivative_solver_radical_chain():
-    """Test image.png: y = \sqrt{x^2 - 1} -> y' = x / \sqrt{x^2 - 1}."""
+    r"""Test image.png: y = \sqrt{x^2 - 1} -> y' = x / \sqrt{x^2 - 1}."""
     parsed = parse_math_text(r"y = \sqrt{x^2 - 1}")
     solver = get_solver("calculus_derivative")
     assert solver is not None
@@ -120,3 +120,38 @@ def test_function_definition_classified_as_derivative():
     solver = get_solver("calculus_derivative")
     sol = solver.solve(parsed, "calculus_derivative")
     assert sol.answer == "3*(x - 1)*(x + 1)" or sol.answer == "3*x**2 - 3"
+
+
+def test_derivative_solver_image2_quotient_log():
+    r"""Test image2.png: f(x) = \frac{x\ln x}{x+1} -> f'(x) = \frac{x + \ln x + 1}{(x+1)^2}."""
+    parsed = parse_math_text(r"f(x) = \frac{x \ln x}{x + 1}")
+    solver = get_solver("calculus_derivative")
+    assert solver is not None
+
+    result = solver.solve(parsed, "calculus_derivative")
+    assert result.answer is not None
+    assert len(result.steps) == 5
+
+    # Check mathematical correctness
+    x = Symbol("x")
+    expected = (x + sympy.log(x) + 1) / (x + 1) ** 2
+    ans_expr = sympy.sympify(result.answer)
+    assert sympy.simplify(ans_expr - expected) == 0
+
+    # Lesson awareness: quotient rule
+    assert result.lesson_info is not None
+    assert result.lesson_info["method_id"] == "method_derivative_quotient_rule"
+    assert "ផលចែក" in result.lesson_info["method_km"]
+
+    # Pedagogical steps in Khmer BacII format
+    assert "កំណត់អនុគមន៍ដើម" in result.steps[0].title_km
+    assert "អនុវត្តវិធានផលចែក" in result.steps[1].title_km
+    assert "គណនាដេរីវេនៃភាគយក និងភាគបែង" in result.steps[2].title_km
+    assert "ពង្រាយ និងសម្រួលភាគយក" in result.steps[3].title_km
+    assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
+
+    # Verify \ln is used instead of \log in student steps
+    for step in result.steps:
+        assert r"\log" not in step.expression
+        assert r"\log" not in step.description_km
+

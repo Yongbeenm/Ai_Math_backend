@@ -20,6 +20,7 @@ Designed for High School Grade 12 / Cambodian BacII National Examination:
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import sympy
@@ -28,6 +29,20 @@ from sympy import Add, Derivative, Eq, Function, Mul, Pow, Symbol, exp, factor, 
 from app.api.schemas.responses import SolutionStep
 from app.knowledge.lessons.derivatives import detect_derivative_method
 from app.reasoning.steps.base import StepGenerator
+
+
+def _to_latex(expr_or_str: Any) -> str:
+    """Format mathematical expression to LaTeX using standard BacII notation (ln instead of log)."""
+    if isinstance(expr_or_str, str):
+        text = expr_or_str
+    else:
+        try:
+            text = latex(expr_or_str, ln_notation=True)
+        except Exception:
+            text = latex(expr_or_str)
+    # Ensure any remaining \log notation is converted to \ln
+    text = re.sub(r"\\log\b", r"\\ln", text)
+    return text
 
 
 class DerivativeStepGenerator(StepGenerator):
@@ -115,25 +130,33 @@ class DerivativeStepGenerator(StepGenerator):
         method_id = detect_derivative_method(func_expr, var)
 
         if method_id == "method_derivative_radical_chain":
-            return self._generate_radical_chain_steps(
+            steps = self._generate_radical_chain_steps(
                 func_expr, var, func_name, deriv_name, final_ans
             )
         elif method_id == "method_derivative_reciprocal_power":
-            return self._generate_reciprocal_power_steps(
+            steps = self._generate_reciprocal_power_steps(
                 func_expr, var, func_name, deriv_name, final_ans
             )
         elif method_id in ("method_derivative_exponential", "method_derivative_exponential_rule"):
-            return self._generate_exponential_steps(
+            steps = self._generate_exponential_steps(
                 func_expr, var, func_name, deriv_name, final_ans
             )
         elif method_id == "method_derivative_quotient_rule":
-            return self._generate_quotient_steps(
+            steps = self._generate_quotient_steps(
                 func_expr, var, func_name, deriv_name, final_ans
             )
         else:
-            return self._generate_standard_steps(
+            steps = self._generate_standard_steps(
                 func_expr, var, func_name, deriv_name, final_ans
             )
+
+        # Standardize notation across all steps (\log -> \ln for Cambodian Grade 12 BacII)
+        for s in steps:
+            s.expression = _to_latex(s.expression)
+            s.description_km = _to_latex(s.description_km)
+            s.description_en = _to_latex(s.description_en)
+
+        return steps
 
     def _generate_radical_chain_steps(
         self, func_expr: Any, var: Symbol, func_name: str, deriv_name: str, final_ans: Any
@@ -453,14 +476,24 @@ class DerivativeStepGenerator(StepGenerator):
             )
         )
 
+        # Step 4: Expand and simplify numerator
+        num_raw = u_prime * v - u * v_prime
+        num_expanded = sympy.expand(num_raw)
+        if num_expanded != num_raw:
+            desc_km = f"ពង្រាយតួភាគយក និងសម្រួលកន្សោម ៖ ${_to_latex(num_raw)} = {_to_latex(num_expanded)}$។"
+            desc_en = f"Expand numerator terms and simplify: ${_to_latex(num_raw)} = {_to_latex(num_expanded)}$."
+        else:
+            desc_km = "ពង្រាយតួភាគយក និងសម្រួលកន្សោម។"
+            desc_en = "Expand numerator terms and simplify."
+
         steps.append(
             SolutionStep(
                 order=4,
                 title_km="ពង្រាយ និងសម្រួលភាគយក",
                 title_en="Expand and Simplify Numerator",
-                description_km="ពង្រាយតួភាគយក និងសម្រួលកន្សោម។",
-                description_en="Expand numerator terms and simplify.",
-                expression=f"{deriv_name} = {latex(final_ans)}",
+                description_km=desc_km,
+                description_en=desc_en,
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
             )
         )
 

@@ -48,6 +48,7 @@ def clean_pix2tex_output(latex_code: str) -> str:
     t = t.replace("{[}", "[").replace("{]}", "]")
     t = re.sub(r"([+\-=])\{\s*(\\frac\{[^{}]*\}\{[^{}]*\})\s*\}", r"\1\2", t)
     t = re.sub(r"\\(?:quad|qquad|hfill|vfill)", " ", t)
+    t = re.sub(r"\\underline\{\s*\{*\s*=\s*\}*\s*\}", "=", t)
     t = re.sub(r"\\(?:equiv|doteq|simeq|cong)\b", "=", t)
     t = t.replace(r"\equiv", "=").replace(r"\doteq", "=")
 
@@ -187,7 +188,7 @@ class Pix2TexVisionEngine(MathVisionEngine):
             binary = gray < 200
             col_counts = np.sum(binary, axis=0)
 
-            max_search_x = int(w * 0.35)
+            max_search_x = int(w * 0.45)
             gap_start = None
             for x in range(5, max_search_x):
                 if col_counts[x] <= 1:
@@ -196,7 +197,7 @@ class Pix2TexVisionEngine(MathVisionEngine):
                 else:
                     if gap_start is not None:
                         gap_len = x - gap_start
-                        if gap_len >= 15:
+                        if gap_len >= 10:
                             ink_left = np.sum(col_counts[:gap_start])
                             if ink_left > 30:
                                 return gap_start + gap_len // 2
@@ -204,6 +205,37 @@ class Pix2TexVisionEngine(MathVisionEngine):
         except Exception:
             pass
         return None
+
+    @staticmethod
+    def _is_valid_prefix(txt: str | None) -> bool:
+        """Check if extracted prefix is valid Khmer text or an exercise label."""
+        if not txt:
+            return False
+        t = txt.strip()
+        known_keywords = (
+            "យើងមាន",
+            "គេមាន",
+            "គណនា",
+            "រក",
+            "ចូរ",
+            "លំហាត់",
+            "បង្ហាញថា",
+            "ដោះស្រាយ",
+            "សន្មត",
+            "កំណត់",
+            "អនុវត្ត",
+        )
+        if any(kw in t for kw in known_keywords):
+            return True
+
+        import re
+
+        if re.match(
+            r"^(\([a-zA-Z0-9\u1780-\u17a2]{1,2}\)|[a-zA-Z0-9\u1780-\u17a2]{1,2}[\.\)៖:])\s*$",
+            t,
+        ):
+            return True
+        return False
 
     @staticmethod
     def _extract_label(crop: Image.Image) -> str | None:
@@ -302,16 +334,21 @@ class Pix2TexVisionEngine(MathVisionEngine):
             split_x = self._detect_label_gap(img)
             label_text = None
             if split_x:
-                label_text = self._extract_label(img.crop((0, 0, split_x, img.height)))
-                f_crop = img.crop((split_x, 0, img.width, img.height))
-                if f_crop.height < 150:
-                    scale = 1.2
-                    f_crop = f_crop.resize(
-                        (int(f_crop.width * scale), int(f_crop.height * scale)),
-                        Image.Resampling.LANCZOS,
-                    )
-                f_padded = ImageOps.expand(f_crop, border=(20, 20, 20, 20), fill="white")
-                raw_latex = self.model(f_padded)
+                raw_label = self._extract_label(img.crop((0, 0, split_x, img.height)))
+                if self._is_valid_prefix(raw_label):
+                    label_text = raw_label
+                    f_crop = img.crop((split_x, 0, img.width, img.height))
+                    if f_crop.height < 150:
+                        scale = 1.2
+                        f_crop = f_crop.resize(
+                            (int(f_crop.width * scale), int(f_crop.height * scale)),
+                            Image.Resampling.LANCZOS,
+                        )
+                    f_padded = ImageOps.expand(f_crop, border=(20, 20, 20, 20), fill="white")
+                    raw_latex = self.model(f_padded)
+                else:
+                    f_padded = ImageOps.expand(img, border=(20, 20, 20, 20), fill="white")
+                    raw_latex = self.model(f_padded)
             else:
                 f_padded = ImageOps.expand(img, border=(20, 20, 20, 20), fill="white")
                 raw_latex = self.model(f_padded)
