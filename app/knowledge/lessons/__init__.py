@@ -9,6 +9,7 @@ from app.knowledge.lessons.equations import chapter_equations, lesson_equations
 from app.knowledge.lessons.geometry import chapter_geometry, lesson_spatial_geometry
 from app.knowledge.lessons.integrals import chapter_integrals, lesson_integrals
 from app.knowledge.lessons.limits import chapter_limits, lesson_limits
+from app.knowledge.lessons.logarithms import chapter_logarithms, lesson_natural_logarithm
 
 __all__ = [
     "chapter_algebra",
@@ -16,6 +17,7 @@ __all__ = [
     "chapter_equations",
     "chapter_complex_numbers",
     "chapter_derivatives",
+    "chapter_logarithms",
     "chapter_integrals",
     "chapter_geometry",
     "lesson_expansion",
@@ -24,6 +26,7 @@ __all__ = [
     "lesson_equations",
     "lesson_complex_numbers",
     "lesson_derivatives",
+    "lesson_natural_logarithm",
     "lesson_integrals",
     "lesson_spatial_geometry",
 ]

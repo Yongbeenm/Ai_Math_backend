@@ -114,6 +114,8 @@ class ExpressionEvaluator(BaseSolver):
         "radical_simplification",
         "expression_expansion",
         "polynomial_expansion",
+        "logarithm_evaluation",
+        "logarithm_simplification",
     )
 
     def can_solve(self, problem_type: str) -> bool:
@@ -198,6 +200,48 @@ class ExpressionEvaluator(BaseSolver):
                     expression=f"= {sympy.latex(evaluated)}",
                 ),
             ]
+        elif (
+            problem_type in ("logarithm_evaluation", "logarithm_simplification")
+            or (
+                hasattr(expr, "has")
+                and (
+                    expr.has(sympy.log)
+                    or (
+                        parsed.raw_text
+                        and any(
+                            k in parsed.raw_text.lower()
+                            for k in ("\\ln", "ln", "e^\\ln", "e^{\\ln", "\\ln e^", "\\ln(e^")
+                        )
+                    )
+                )
+            )
+        ):
+            from app.reasoning.steps.logarithm import LogarithmStepGenerator
+
+            real_subs = {s: sympy.Symbol(s.name, real=True) for s in expr.free_symbols}
+            evaluated = expr.subs(real_subs).simplify() if hasattr(expr, "subs") else expr
+
+            gen = LogarithmStepGenerator()
+            steps = gen.generate(expr, symbol=None, raw_text=parsed.raw_text)
+
+            raw_lower = (parsed.raw_text or "").lower()
+            method_id = (
+                "method_logarithm_property_exp"
+                if "e^{\\ln" in raw_lower or "e^\\ln" in raw_lower or "e^{ln" in raw_lower
+                else "method_logarithm_property_log_exp"
+            )
+            from app.knowledge.registry import get_knowledge_registry
+
+            meta = get_knowledge_registry().get_metadata(method_id)
+            lesson_info = meta.to_dict() if meta else {
+                "chapter_id": "chapter_exponential_and_logarithmic_functions",
+                "chapter_km": "ជំពូកទី៤ : អនុគមន៍អិចស្ប៉ូណង់ស្យែល និងអនុគមន៍លោការីត",
+                "chapter_en": "Chapter 4: Exponential and Logarithmic Functions",
+                "lesson_id": "lesson_natural_logarithm",
+                "lesson_km": "មេរៀនទី២ : អនុគមន៍លោការីតនេពែ",
+                "lesson_en": "Lesson 2: Natural Logarithmic Functions",
+                "method_id": method_id,
+            }
         else:
             evaluated = sympy.simplify(expr)
             raw_text = parsed.raw_text.lower()

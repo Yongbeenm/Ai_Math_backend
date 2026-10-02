@@ -122,6 +122,10 @@ _MATH_KEYWORDS = {
     "int",
     "sum",
     "prod",
+    "dx",
+    "dy",
+    "dt",
+    "dz",
 }
 
 

@@ -20,6 +20,7 @@ from app.knowledge.lessons import (
     chapter_geometry,
     chapter_integrals,
     chapter_limits,
+    chapter_logarithms,
 )
 from app.knowledge.models import Chapter
 
@@ -32,6 +33,7 @@ def build_curriculum_knowledge() -> list[Chapter]:
         chapter_equations,
         chapter_complex_numbers,
         chapter_derivatives,
+        chapter_logarithms,
         chapter_integrals,
         chapter_geometry,
     ]

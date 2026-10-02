@@ -81,11 +81,23 @@ def _clean_latex_text(text: str) -> str:
     # Convert sqrt(...) to \sqrt{...}
     t = re.sub(r"(?:\\)?sqrt\(([^)]+)\)", r"\\sqrt{\1}", t)
 
+    # Normalize +\infty to \infty in limit targets
+    t = re.sub(
+        r"(?:->|\\\\rightarrow|\\rightarrow|\\\\to|\\to|\bto\b)\s*\+\s*(?:\\)?infty",
+        r"\\to \\infty",
+        t,
+    )
+    # Normalize one-sided targets like 0^+ or 0^- or 0^{+}
+    t = re.sub(
+        r"(?:->|\\\\rightarrow|\\rightarrow|\\\\to|\\to|\bto\b)\s*([0-9a-zA-Z]+)\^\{?[+\-]\}?",
+        r"\\to \1",
+        t,
+    )
     # Convert ASCII limits like 'lim x->0 expr', 'lim_{x->0} expr', 'limit x->0' to '\lim_{x \to 0} expr'
     ascii_lim_pat = re.compile(
-        r"(?i)(?:\\\\|\\|/)*lim(?:it)?\s*(?:_\{?|\s+)\s*([a-zA-Z])\s*(?:->|\\\\rightarrow|\\rightarrow|\\\\to|\\to|\bto\b)\s*([0-9+\-a-zA-Z]+|\\[a-zA-Z]+)\}?"
+        r"(?i)(?:\\\\|\\|/)*lim(?:it)?\s*(?:_\{?|\s+)\s*([a-zA-Z])\s*(?:->|\\\\rightarrow|\\rightarrow|\\\\to|\\to|\bto\b)\s*([+\-]?\s*(?:\\[a-zA-Z]+|[0-9a-zA-Z]+))\}?"
     )
-    t = ascii_lim_pat.sub(lambda m: rf"\lim_{{{m.group(1)} \to {m.group(2)}}} ", t)
+    t = ascii_lim_pat.sub(lambda m: rf"\lim_{{{m.group(1)} \to {m.group(2).strip()}}} ", t)
 
     # Ensure math functions in LaTeX have leading backslash if missing
     func_pat = re.compile(r"(?<![\\\\a-zA-Z])(sin|cos|tan|cot|sec|csc|ln|log|exp)\b")

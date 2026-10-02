@@ -151,6 +151,14 @@ class DerivativeStepGenerator(StepGenerator):
             steps = self._generate_quotient_steps(
                 func_expr, var, func_name, deriv_name, final_ans
             )
+        elif method_id == "method_derivative_logarithm_composite":
+            steps = self._generate_logarithm_composite_steps(
+                func_expr, var, func_name, deriv_name, final_ans
+            )
+        elif method_id == "method_derivative_logarithm_product":
+            steps = self._generate_logarithm_product_steps(
+                func_expr, var, func_name, deriv_name, final_ans
+            )
         else:
             steps = self._generate_standard_steps(
                 func_expr, var, func_name, deriv_name, final_ans
@@ -797,14 +805,26 @@ class DerivativeStepGenerator(StepGenerator):
             )
         )
 
+        is_log = hasattr(func_expr, "has") and func_expr.has(sympy.log)
+        desc_step3_km = (
+            "អនុវត្តវិធានដេរីវេនៃអនុគមន៍លោការីត $(\\ln x)' = \\frac{1}{x}$ និងផលបូក ដក។"
+            if is_log
+            else "អនុវត្តវិធានដេរីវេស្វ័យគុណ $(x^n)' = n x^{n-1}$ និងផលបូក ដក។"
+        )
+        desc_step3_en = (
+            "Apply logarithmic derivative rule $(\\ln x)' = 1/x$ and sum/difference rules across terms."
+            if is_log
+            else "Apply power rule $(x^n)' = n x^{n-1}$ and sum/difference rules across terms."
+        )
+
         steps.append(
             SolutionStep(
                 order=3,
                 title_km="គណនាដេរីវេនៃតួនិមួយៗ",
                 title_en="Differentiate Each Term",
-                description_km="អនុវត្តវិធានដេរីវេស្វ័យគុណ $(x^n)' = n x^{n-1}$ និងផលបូក ដក។",
-                description_en="Apply power rule $(x^n)' = n x^{n-1}$ and sum/difference rules across terms.",
-                expression=f"{deriv_name} = {latex(final_ans)}",
+                description_km=desc_step3_km,
+                description_en=desc_step3_en,
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
             )
         )
 
@@ -813,9 +833,9 @@ class DerivativeStepGenerator(StepGenerator):
                 order=4,
                 title_km="សម្រួលកន្សោមចុងក្រោយ",
                 title_en="Simplify Expression",
-                description_km="សម្រួលកន្សោម និងរៀបតាមលំដាប់ស្វ័យគុណចុះ។",
-                description_en="Simplify expression and arrange terms in descending order.",
-                expression=f"{deriv_name} = {latex(final_ans)}",
+                description_km="សម្រួលកន្សោម និងរៀបតាមលំដាប់ចុះ។",
+                description_en="Simplify expression and arrange terms in standard order.",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
             )
         )
 
@@ -824,9 +844,201 @@ class DerivativeStepGenerator(StepGenerator):
                 order=5,
                 title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
                 title_en="State Final Derivative Result",
-                description_km=f"ដូចនេះ ${deriv_name} = {latex(final_ans)}$",
-                description_en=f"Therefore, ${deriv_name} = {latex(final_ans)}$",
-                expression=f"{deriv_name} = {latex(final_ans)}",
+                description_km=f"ដូចនេះ ${deriv_name} = {_to_latex(final_ans)}$",
+                description_en=f"Therefore, ${deriv_name} = {_to_latex(final_ans)}$",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
+            )
+        )
+
+        return steps
+
+    def _generate_logarithm_composite_steps(
+        self, func_expr: Any, var: Symbol, func_name: str, deriv_name: str, final_ans: Any
+    ) -> list[SolutionStep]:
+        """
+        Steps for composite natural logarithm: (ln u)' = u' / u.
+        Matches Cambodian Grade 12 BacII Chapter 4 Lesson 2.
+        """
+        steps: list[SolutionStep] = []
+
+        # Find the inner argument of log
+        u = None
+        if isinstance(func_expr, sympy.log):
+            u = func_expr.args[0]
+        else:
+            for arg in func_expr.atoms(sympy.log):
+                u = arg.args[0]
+                break
+        if u is None:
+            u = func_expr
+
+        u_prime = sympy.diff(u, var)
+
+        # Step 1: Identify given function
+        steps.append(
+            SolutionStep(
+                order=1,
+                title_km="កំណត់អនុគមន៍ដើម",
+                title_en="Identify Given Function",
+                description_km=f"យើងមានអនុគមន៍ ${func_name} = {_to_latex(func_expr)}$ និងអថេរដេរីវេ ${var}$។",
+                description_en=f"Given the function ${func_name} = {_to_latex(func_expr)}$ with respect to ${var}$.",
+                expression=f"{func_name} = {_to_latex(func_expr)}",
+            )
+        )
+
+        # Step 2: Apply chain rule for natural logarithm
+        steps.append(
+            SolutionStep(
+                order=2,
+                title_km="អនុវត្តវិធានដេរីវេអនុគមន៍បណ្តាក់លោការីត",
+                title_en="Apply Logarithmic Chain Rule",
+                description_km=(
+                    f"អនុវត្តរូបមន្តដេរីវេអនុគមន៍បណ្តាក់ $(\\ln u)' = \\frac{{u'}}{{u}}$ "
+                    f"ចំពោះ $u = {_to_latex(u)}$។"
+                ),
+                description_en=(
+                    f"Apply logarithmic chain rule $(\\ln u)' = \\frac{{u'}}{{u}}$ "
+                    f"where $u = {_to_latex(u)}$."
+                ),
+                expression=f"{deriv_name} = \\frac{{({_to_latex(u)})'}}{{{_to_latex(u)}}}",
+            )
+        )
+
+        # Step 3: Differentiate inner function
+        steps.append(
+            SolutionStep(
+                order=3,
+                title_km="គណនាដេរីវេនៃកន្សោមខាងក្នុង",
+                title_en="Differentiate Inner Expression",
+                description_km=f"គណនាដេរីវេនៃកន្សោមខាងក្នុង $({_to_latex(u)})' = {_to_latex(u_prime)}$ គេបាន ៖",
+                description_en=f"Differentiate inner component: $({_to_latex(u)})' = {_to_latex(u_prime)}$:",
+                expression=f"{deriv_name} = \\frac{{{_to_latex(u_prime)}}}{{{_to_latex(u)}}}",
+            )
+        )
+
+        # Step 4: Simplify fraction
+        steps.append(
+            SolutionStep(
+                order=4,
+                title_km="សម្រួលកន្សោម",
+                title_en="Simplify Expression",
+                description_km=f"សម្រួលកន្សោមប្រភាគ គេបាន ${deriv_name} = {_to_latex(final_ans)}$។",
+                description_en=f"Simplify resulting expression: ${deriv_name} = {_to_latex(final_ans)}$.",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
+            )
+        )
+
+        # Step 5: Final conclusion
+        steps.append(
+            SolutionStep(
+                order=5,
+                title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
+                title_en="State Final Derivative Result",
+                description_km=f"ដូចនេះ ${deriv_name} = {_to_latex(final_ans)}$",
+                description_en=f"Therefore, ${deriv_name} = {_to_latex(final_ans)}$",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
+            )
+        )
+
+        return steps
+
+    def _generate_logarithm_product_steps(
+        self, func_expr: Any, var: Symbol, func_name: str, deriv_name: str, final_ans: Any
+    ) -> list[SolutionStep]:
+        """
+        Steps for product of polynomial/radical and logarithm: (u * v)' = u' v + u v'.
+        Matches Cambodian Grade 12 BacII Chapter 4 Lesson 2.
+        """
+        steps: list[SolutionStep] = []
+
+        log_factor = None
+        other_factors = []
+        if isinstance(func_expr, sympy.Mul):
+            for arg in func_expr.args:
+                if arg.has(sympy.log) and log_factor is None:
+                    log_factor = arg
+                else:
+                    other_factors.append(arg)
+        else:
+            log_factor = func_expr
+            other_factors = [1]
+
+        u = sympy.Mul(*other_factors) if other_factors else sympy.S.One
+        v = log_factor if log_factor is not None else func_expr
+
+        u_prime = sympy.diff(u, var)
+        v_prime = sympy.diff(v, var)
+        expanded_sum = u_prime * v + u * v_prime
+
+        # Step 1: Identify function
+        steps.append(
+            SolutionStep(
+                order=1,
+                title_km="កំណត់អនុគមន៍ដើម",
+                title_en="Identify Given Function",
+                description_km=f"យើងមានអនុគមន៍ ${func_name} = {_to_latex(func_expr)}$ និងអថេរដេរីវេ ${var}$។",
+                description_en=f"Given the function ${func_name} = {_to_latex(func_expr)}$ with respect to ${var}$.",
+                expression=f"{func_name} = {_to_latex(func_expr)}",
+            )
+        )
+
+        # Step 2: Apply product rule
+        steps.append(
+            SolutionStep(
+                order=2,
+                title_km="អនុវត្តវិធានផលគុណ",
+                title_en="Apply Product Rule",
+                description_km=(
+                    f"អនុវត្តវិធានផលគុណ $(uv)' = u'v + uv'$ ចំពោះ "
+                    f"$u = {_to_latex(u)}, v = {_to_latex(v)}$។"
+                ),
+                description_en=(
+                    f"Apply product rule $(uv)' = u'v + uv'$ where "
+                    f"$u = {_to_latex(u)}, v = {_to_latex(v)}$."
+                ),
+                expression=f"{deriv_name} = ({_to_latex(u)})'({_to_latex(v)}) + ({_to_latex(u)})({_to_latex(v)})'",
+            )
+        )
+
+        # Step 3: Differentiate each factor
+        steps.append(
+            SolutionStep(
+                order=3,
+                title_km="គណនាដេរីវេនៃកត្តានីមួយៗ",
+                title_en="Differentiate Each Factor",
+                description_km=(
+                    f"គណនា $u' = ({_to_latex(u)})' = {_to_latex(u_prime)}$ និង "
+                    f"$v' = ({_to_latex(v)})' = {_to_latex(v_prime)}$ គេបាន ៖"
+                ),
+                description_en=(
+                    f"Differentiate factors: $u' = ({_to_latex(u)})' = {_to_latex(u_prime)}$ and "
+                    f"$v' = ({_to_latex(v)})' = {_to_latex(v_prime)}$:"
+                ),
+                expression=f"{deriv_name} = ({_to_latex(u_prime)})({_to_latex(v)}) + ({_to_latex(u)})({_to_latex(v_prime)}) = {_to_latex(expanded_sum)}",
+            )
+        )
+
+        # Step 4: Simplify and common denominator
+        steps.append(
+            SolutionStep(
+                order=4,
+                title_km="សម្រួលកន្សោម",
+                title_en="Simplify Expression",
+                description_km=f"តម្រូវភាគបែងរួម និងសម្រួលកន្សោម គេបាន ${deriv_name} = {_to_latex(final_ans)}$។",
+                description_en=f"Combine terms and simplify: ${deriv_name} = {_to_latex(final_ans)}$.",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
+            )
+        )
+
+        # Step 5: Final conclusion
+        steps.append(
+            SolutionStep(
+                order=5,
+                title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
+                title_en="State Final Derivative Result",
+                description_km=f"ដូចនេះ ${deriv_name} = {_to_latex(final_ans)}$",
+                description_en=f"Therefore, ${deriv_name} = {_to_latex(final_ans)}$",
+                expression=f"{deriv_name} = {_to_latex(final_ans)}",
             )
         )
 

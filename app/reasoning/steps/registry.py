@@ -14,11 +14,13 @@ from app.reasoning.steps.calculus_limit import LimitStepGenerator
 from app.reasoning.steps.expansion import ExpansionStepGenerator
 from app.reasoning.steps.inequality import LinearInequalityStepGenerator
 from app.reasoning.steps.linear import LinearStepGenerator
+from app.reasoning.steps.logarithm import LogarithmStepGenerator
 from app.reasoning.steps.polynomial import PolynomialStepGenerator
 from app.reasoning.steps.quadratic import QuadraticStepGenerator
 from app.reasoning.steps.system import SystemStepGenerator
 
 _expansion_gen = ExpansionStepGenerator()
+_logarithm_gen = LogarithmStepGenerator()
 
 _GENERATORS: dict[str, StepGenerator] = {
     "linear_equation": LinearStepGenerator(),
@@ -31,6 +33,8 @@ _GENERATORS: dict[str, StepGenerator] = {
     "factored_expression": _expansion_gen,
     "expression_expansion": _expansion_gen,
     "polynomial_expansion": _expansion_gen,
+    "logarithm_evaluation": _logarithm_gen,
+    "logarithm_simplification": _logarithm_gen,
 }
 
 

@@ -35,6 +35,15 @@ def _format_pt_str(pt: Any) -> str:
     return str(pt)
 
 
+def _to_latex(expr_or_str: Any) -> str:
+    """Convert expression to LaTeX string with standard Khmer \ln notation."""
+    if isinstance(expr_or_str, str):
+        s = expr_or_str
+    else:
+        s = latex(expr_or_str)
+    return s.replace(r"\log", r"\ln")
+
+
 def simplify_real_roots(expr: Any) -> Any:
     """In real calculus, simplify (-1)**(p/q) for odd q to (-1)**p."""
     if not hasattr(expr, "replace"):
@@ -61,6 +70,13 @@ def detect_limit_method(expr: Limit) -> str:
     f = expr.args[0]
     var = expr.args[1] if len(expr.args) > 1 else Symbol("x")
     pt = expr.args[2] if len(expr.args) > 2 else S.Zero
+
+    # Logarithmic limits (Grade 12 Chapter 4 Lesson 2)
+    if f.has(sympy.log):
+        if pt in (oo, -oo):
+            return "method_limit_logarithm_infinity"
+        elif pt == 0:
+            return "method_limit_logarithm_zero"
 
     if pt in (oo, -oo):
         return "method_limit_factor_cancel"
@@ -116,8 +132,18 @@ class LimitStepGenerator(StepGenerator):
 
         pt_str = _format_pt_str(pt)
 
+        if f.has(sympy.log):
+            return self._generate_logarithm_limit_steps(
+                f=f,
+                var=var,
+                pt=pt,
+                pt_str=pt_str,
+                expr=expr,
+                expected_rhs=expected_rhs,
+            )
+
         # Step 1: Original Limit
-        orig_latex = f"\\lim_{{{var} \\to {pt_str}}} \\left({latex(f)}\\right)"
+        orig_latex = f"\\lim_{{{var} \\to {pt_str}}} \\left({_to_latex(f)}\\right)"
         steps.append(
             SolutionStep(
                 order=order,
@@ -126,8 +152,8 @@ class LimitStepGenerator(StepGenerator):
                 expression=orig_latex,
                 title_km="កំណត់កន្សោមលីមីតដើម",
                 title_en="Identify Limit Expression",
-                rationale_km=f"កត់សម្គាល់អនុគមន៍ f({var}) = {latex(f)} និងចំណុចខិតជិត {var} \\to {pt_str}។",
-                rationale_en=f"Identify the function f({var}) = {latex(f)} and the approach point {var} -> {pt_str}.",
+                rationale_km=f"កត់សម្គាល់អនុគមន៍ f({var}) = {_to_latex(f)} និងចំណុចខិតជិត {var} \\to {pt_str}។",
+                rationale_en=f"Identify the function f({var}) = {_to_latex(f)} and the approach point {var} -> {pt_str}.",
             )
         )
         order += 1
@@ -346,6 +372,153 @@ class LimitStepGenerator(StepGenerator):
                     description_km=f"ផ្ទៀងផ្ទាត់សមភាព៖ តម្លៃលីមីតគណនាបាន = ${latex(final_val)}$ ស្មើនឹងអង្គខាងស្តាំ = ${latex(expected_rhs)}$ ({status_km})៖",
                     description_en=f"Verification: Computed limit = ${latex(final_val)}$ matches RHS = ${latex(expected_rhs)}$ ({status_en}):",
                     expression=f"{latex(final_val)} = {latex(expected_rhs)} \\quad \\left(\\text{{{status_km} / {status_en}}}\\right)",
+                    title_km="ផ្ទៀងផ្ទាត់សមភាពនៃលីមីត",
+                    title_en="Verify Limit Equality",
+                    rationale_km="ប្រៀបធៀបតម្លៃលីមីតដែលបានគណនា ជាមួយនឹងអង្គខាងស្តាំនៃសមភាពដើម ដើម្បីផ្ទៀងផ្ទាត់ភាពត្រឹមត្រូវ។",
+                    rationale_en="Compare calculated limit value against the right-hand side of original equality to verify correctness.",
+                    is_verification=True,
+                )
+            )
+
+        return steps
+
+    def _generate_logarithm_limit_steps(
+        self,
+        f: Any,
+        var: Symbol,
+        pt: Any,
+        pt_str: str,
+        expr: Limit,
+        expected_rhs: Any = None,
+    ) -> list[SolutionStep]:
+        steps: list[SolutionStep] = []
+        final_val = simplify_real_roots(expr.doit())
+
+        # Determine approach notation
+        approach_sym = rf"{var} \to {pt_str}"
+        if pt == 0:
+            approach_sym = rf"{var} \to 0^+"
+        elif pt == oo:
+            approach_sym = rf"{var} \to +\infty"
+
+        # Step 1: Identify original limit
+        orig_latex = rf"\lim_{{{approach_sym}}} \left({_to_latex(f)}\right)"
+        steps.append(
+            SolutionStep(
+                order=1,
+                description_km="កំណត់កន្សោមលីមីតដើមនៃអនុគមន៍លោការីតនេពែ៖",
+                description_en="Given natural logarithmic limit expression:",
+                expression=orig_latex,
+                title_km="កំណត់កន្សោមលីមីតដើម",
+                title_en="Identify Limit Expression",
+                rationale_km=f"កត់សម្គាល់អនុគមន៍ f({var}) = {_to_latex(f)} និងចំណុចខិតជិត ${approach_sym}$ (ដែនកំណត់នៃ $\\ln {var}$ គឺ ${var} > 0$)។",
+                rationale_en=f"Identify the function f({var}) = {_to_latex(f)} and approach ${approach_sym}$ (domain of $\\ln {var}$ is ${var} > 0$).",
+            )
+        )
+
+        num, den = f.as_numer_denom()
+
+        # Step 2 & 3
+        if pt == 0:
+            steps.append(
+                SolutionStep(
+                    order=2,
+                    description_km=f"នៅពេល ${approach_sym}$ យើងមាន ${var} \\to 0$ និង $\\ln {var} \\to -\\infty$ នាំឱ្យមានរាងមិនកំណត់ $[0 \\times (-\\infty)]$៖",
+                    description_en=f"As ${approach_sym}$, ${var} \\to 0$ and $\\ln {var} \\to -\\infty$, yielding indeterminate form $[0 \\times (-\\infty)]:$",
+                    expression=r"0 \times (-\infty) \quad \text{(រាងមិនកំណត់)}",
+                    title_km="កំណត់រាងមិនកំណត់ [0 × (-∞)]",
+                    title_en="Identify Indeterminate Form [0 × (-∞)]",
+                    rationale_km="ការជំនួសផ្ទាល់នាំឱ្យបានរាងមិនកំណត់ [0 × (-∞)] ដូច្នេះត្រូវអនុវត្តរូបមន្តលីមីតគ្រឹះនៃអនុគមន៍លោការីតនេពែ។",
+                    rationale_en="Direct substitution yields [0 × (-∞)], requiring fundamental logarithmic limit theorem.",
+                    rule_formula=r"\left[0 \times (-\infty)\right]",
+                )
+            )
+            steps.append(
+                SolutionStep(
+                    order=3,
+                    description_km=f"អនុវត្តរូបមន្តលីមីតគ្រឹះ $\\lim_{{{var} \\to 0^+}} {var}^n \\ln {var} = 0$ (ចំពោះ $n > 0$)៖",
+                    description_en=f"Apply fundamental logarithmic limit $\\lim_{{{var} \\to 0^+}} {var}^n \\ln {var} = 0$ (for $n > 0$):",
+                    expression=rf"\lim_{{{approach_sym}}} \left({_to_latex(f)}\right) = {_to_latex(final_val)}",
+                    title_km="អនុវត្តរូបមន្តលីមីតគ្រឹះលោការីតត្រង់ 0⁺",
+                    title_en="Apply Fundamental Logarithmic Limit at 0⁺",
+                    rationale_km=f"ផ្អែកតាមទ្រឹស្តីបទលីមីតគ្រឹះនៃអនុគមន៍លោការីតនេពែត្រង់ $0^+$ គេបាន $\\lim_{{{var} \\to 0^+}} {var}^n \\ln {var} = 0$។",
+                    rationale_en="By fundamental logarithmic limit theorem at 0+, the limit evaluates to 0.",
+                    rule_formula=rf"\lim_{{{var} \\to 0^+}} {var}^n \\ln {var} = 0 \quad (n > 0)",
+                )
+            )
+        else:
+            # pt at infinity
+            steps.append(
+                SolutionStep(
+                    order=2,
+                    description_km=f"នៅពេល ${approach_sym}$ យើងមាន $\\ln {var} \\to +\\infty$ និងភាគបែងខិតជិត $+\\infty$ នាំឱ្យមានរាងមិនកំណត់ $\\left[\\frac{{\\infty}}{{\\infty}}\\right]$៖",
+                    description_en=f"As ${approach_sym}$, $\\ln {var} \\to +\\infty$ and denominator approaches $+\\infty$, yielding form $[\\infty/\\infty]$:",
+                    expression=r"\frac{\infty}{\infty} \quad \text{(រាងមិនកំណត់)}",
+                    title_km="កំណត់រាងមិនកំណត់ [∞/∞]",
+                    title_en="Identify Indeterminate Form [∞/∞]",
+                    rationale_km="ភាគយកនិងភាគបែងខិតជិតអនន្តដំណាលគ្នា ដូច្នេះត្រូវអនុវត្តរូបមន្តលីមីតគ្រឹះនៃអនុគមន៍លោការីតនេពែ។",
+                    rationale_en="Numerator and denominator approach infinity, requiring fundamental logarithmic limit theorem.",
+                    rule_formula=r"\left[\frac{\infty}{\infty}\right]",
+                )
+            )
+
+            if isinstance(num, sympy.Add):
+                split_terms = [rf"\frac{{{_to_latex(t)}}}{{{_to_latex(den)}}}" for t in num.args]
+                split_str = " + ".join(split_terms)
+                steps.append(
+                    SolutionStep(
+                        order=3,
+                        description_km=f"បំបែកភាគយក និងអនុវត្តរូបមន្តលីមីតគ្រឹះ $\\lim_{{{var} \\to +\\infty}} \\frac{{\\ln {var}}}{{{var}^n}} = 0$ (ចំពោះ $n > 0$)៖",
+                        description_en=f"Split numerator and apply fundamental limit $\\lim_{{{var} \\to +\\infty}} \\frac{{\\ln {var}}}{{{var}^n}} = 0$ (for $n > 0$):",
+                        expression=rf"\frac{{{_to_latex(num)}}}{{{_to_latex(den)}}} = {split_str}",
+                        title_km="បំបែកកន្សោម និងអនុវត្តលីមីតគ្រឹះ",
+                        title_en="Split Terms and Apply Fundamental Limit",
+                        rationale_km=f"ដោយសារ $\\lim_{{{var} \\to +\\infty}} \\frac{{1}}{{{_to_latex(den)}}} = 0$ និង $\\lim_{{{var} \\to +\\infty}} \\frac{{\\ln {var}}}{{{_to_latex(den)}}} = 0$ គេបានលីមីតស្មើ 0។",
+                        rationale_en="Since each constituent term approaches 0 at infinity, the overall limit is 0.",
+                        rule_formula=rf"\lim_{{{var} \\to +\\infty}} \frac{{\\ln {var}}}{{{var}^n}} = 0 \quad (n > 0)",
+                    )
+                )
+            else:
+                steps.append(
+                    SolutionStep(
+                        order=3,
+                        description_km=f"អនុវត្តរូបមន្តលីមីតគ្រឹះ $\\lim_{{{var} \\to +\\infty}} \\frac{{\\ln {var}}}{{{var}^n}} = 0$ (ចំពោះ $n > 0$)៖",
+                        description_en=f"Apply fundamental logarithmic limit $\\lim_{{{var} \\to +\\infty}} \\frac{{\\ln {var}}}{{{var}^n}} = 0$ (for $n > 0$):",
+                        expression=rf"\lim_{{{approach_sym}}} \left({_to_latex(f)}\right) = {_to_latex(final_val)}",
+                        title_km="អនុវត្តរូបមន្តលីមីតគ្រឹះលោការីតត្រង់អនន្ត",
+                        title_en="Apply Fundamental Logarithmic Limit at Infinity",
+                        rationale_km=f"ផ្អែកតាមទ្រឹស្តីបទលីមីតគ្រឹះនៃអនុគមន៍លោការីតនេពែត្រង់ $+\\infty$ គេបាន $\\lim_{{{var} \\to +\\infty}} \\frac{{\\ln {var}}}{{{var}^n}} = 0$។",
+                        rationale_en="By fundamental logarithmic limit theorem at infinity, the limit evaluates to 0.",
+                        rule_formula=rf"\lim_{{{var} \\to +\\infty}} \frac{{\\ln {var}}}{{{var}^n}} = 0 \quad (n > 0)",
+                    )
+                )
+
+        # Step 4: Final Limit Value
+        steps.append(
+            SolutionStep(
+                order=4,
+                description_km=f"សន្និដ្ឋានតម្លៃលីមីតចុងក្រោយនៅពេល ${approach_sym}$៖",
+                description_en=f"Conclude final limit value as ${approach_sym}$:",
+                expression=rf"\lim_{{{approach_sym}}} \left({_to_latex(f)}\right) = {_to_latex(final_val)}",
+                title_km="សន្និដ្ឋានតម្លៃលីមីតចុងក្រោយ",
+                title_en="Conclude Final Limit Value",
+                rationale_km="ទទួលបានតម្លៃលីមីតពិតប្រាកដស្របតាមកម្មវិធីសិក្សាថ្នាក់ទី១២។",
+                rationale_en="Obtain exact limit value according to Grade 12 curriculum.",
+            )
+        )
+
+        # Step 5: Verification (if expected RHS is provided)
+        if expected_rhs is not None:
+            expected_rhs = simplify_real_roots(expected_rhs)
+            is_match = (final_val == expected_rhs) or bool(sympy.simplify(final_val - expected_rhs) == 0)
+            status_km = "ពិត" if is_match else "មិនពិត"
+            status_en = "True / Verified" if is_match else "False / Not Equal"
+            steps.append(
+                SolutionStep(
+                    order=5,
+                    description_km=f"ផ្ទៀងផ្ទាត់សមភាព៖ តម្លៃលីមីតគណនាបាន = ${_to_latex(final_val)}$ ស្មើនឹងអង្គខាងស្តាំ = ${_to_latex(expected_rhs)}$ ({status_km})៖",
+                    description_en=f"Verification: Computed limit = ${_to_latex(final_val)}$ matches RHS = ${_to_latex(expected_rhs)}$ ({status_en}):",
+                    expression=rf"{_to_latex(final_val)} = {_to_latex(expected_rhs)} \quad \left(\text{{{status_km} / {status_en}}}\right)",
                     title_km="ផ្ទៀងផ្ទាត់សមភាពនៃលីមីត",
                     title_en="Verify Limit Equality",
                     rationale_km="ប្រៀបធៀបតម្លៃលីមីតដែលបានគណនា ជាមួយនឹងអង្គខាងស្តាំនៃសមភាពដើម ដើម្បីផ្ទៀងផ្ទាត់ភាពត្រឹមត្រូវ។",

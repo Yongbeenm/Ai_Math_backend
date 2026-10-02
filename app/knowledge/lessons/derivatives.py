@@ -247,8 +247,7 @@ chapter_derivatives = Chapter(
 def detect_derivative_method(expr: Any, var: Any = None) -> str:
     """Determine the primary curriculum method ID for differentiating a given expression."""
     import sympy
-    from sympy import Add, Pow, Symbol, exp
-
+    from sympy import Add, Mul, Pow, Symbol, exp, log
     if hasattr(expr, "rhs") and hasattr(expr, "lhs"):
         expr = expr.rhs if expr.rhs != 0 else expr.lhs
 
@@ -256,7 +255,36 @@ def detect_derivative_method(expr: Any, var: Any = None) -> str:
         symbols = list(expr.free_symbols) if hasattr(expr, "free_symbols") else []
         var = symbols[0] if symbols else Symbol("x")
 
-    # 1. Radical chain rule: contains sqrt(...) or (u)**(1/2) with inner polynomial/expression
+    # 1. Natural Logarithm if outer expression is log(...)
+    if isinstance(expr, log):
+        return (
+            "method_derivative_logarithm_basic"
+            if expr.args and expr.args[0] == var
+            else "method_derivative_logarithm_composite"
+        )
+
+    # 2. Exponential Rules
+    if expr.has(exp):
+        return "method_derivative_exponential"
+
+    # 3. Reciprocal power rule: 1 / u^n
+    num, den = expr.as_numer_denom()
+    if num == 1 and den != 1 and den.has(var):
+        return "method_derivative_reciprocal_power"
+
+    # 4. General Quotient Rule: num / den where den depends on var
+    if den != 1 and den.has(var):
+        return "method_derivative_quotient_rule"
+
+    # 5. Natural Logarithm Rules (Product / Sum / Composite)
+    if expr.has(log):
+        if isinstance(expr, Mul):
+            return "method_derivative_logarithm_product"
+        elif isinstance(expr, Add):
+            return "method_derivative_sum_diff"
+        return "method_derivative_logarithm_composite"
+
+    # 6. Radical chain rule: contains sqrt(...) or (u)**(1/2) with inner polynomial/expression
     has_sqrt = any(
         isinstance(p, Pow) and p.exp == sympy.Rational(1, 2)
         for p in expr.atoms(Pow)
@@ -264,23 +292,10 @@ def detect_derivative_method(expr: Any, var: Any = None) -> str:
     if has_sqrt:
         return "method_derivative_radical_chain"
 
-    # 2. Reciprocal power rule: 1 / u^n
-    num, den = expr.as_numer_denom()
-    if num == 1 and den != 1 and den.has(var):
-        return "method_derivative_reciprocal_power"
-
-    # 3. Sum / Difference with Exponential
-    if expr.has(exp):
-        return "method_derivative_exponential"
-
-    # 4. General Quotient Rule: num / den where den depends on var
-    if den != 1 and den.has(var):
-        return "method_derivative_quotient_rule"
-
-    # 5. Sum / Difference
+    # 7. Sum / Difference
     if isinstance(expr, Add):
         return "method_derivative_sum_diff"
 
-    # 6. Default to Power Rule
+    # 8. Default to Power Rule
     return "method_derivative_power_rule"
 
