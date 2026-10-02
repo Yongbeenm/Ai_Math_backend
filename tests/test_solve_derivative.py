@@ -270,4 +270,113 @@ def test_derivative_solver_image4_sub_kh_quotient_trig_exp():
     assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
 
 
+@pytest.mark.parametrize(
+    "label,latex,expected_expr",
+    [
+        (
+            "ក",
+            r"f(x) = e^x + 3 - \frac{e^x}{e^x + 3}",
+            sympy.exp(Symbol("x"))
+            * (sympy.exp(2 * Symbol("x")) + 6 * sympy.exp(Symbol("x")) + 6)
+            / (sympy.exp(Symbol("x")) + 3) ** 2,
+        ),
+        (
+            "ខ",
+            r"f(x) = \frac{x \ln x}{x + 1}",
+            (Symbol("x") + sympy.log(Symbol("x")) + 1) / (Symbol("x") + 1) ** 2,
+        ),
+        (
+            "គ",
+            r"f(x) = \frac{x^2 \ln x}{x - 1}",
+            (
+                Symbol("x") ** 2 * sympy.log(Symbol("x"))
+                - 2 * Symbol("x") * sympy.log(Symbol("x"))
+                + Symbol("x") ** 2
+                - Symbol("x")
+            )
+            / (Symbol("x") - 1) ** 2,
+        ),
+        (
+            "ឃ",
+            r"g(x) = (x - 2)\ln(x) + x - 1",
+            (Symbol("x") * sympy.log(Symbol("x")) + 2 * Symbol("x") - 2) / Symbol("x"),
+        ),
+        (
+            "ង",
+            r"f(x) = x e^{1 - x}",
+            (1 - Symbol("x")) * sympy.exp(1 - Symbol("x")),
+        ),
+        (
+            "ច",
+            r"h(x) = 1 + \frac{1}{x^2} - 2\ln(x)",
+            -2 * (Symbol("x") ** 2 + 1) / Symbol("x") ** 3,
+        ),
+        (
+            "ឆ",
+            r"g(x) = x^2 (1 - \ln(x)) + 1 + \ln(x)",
+            (Symbol("x") ** 2 - 2 * Symbol("x") ** 2 * sympy.log(Symbol("x")) + 1) / Symbol("x"),
+        ),
+        (
+            "ជ",
+            r"f(x) = \frac{x \ln(x)}{1 + x^2}",
+            (
+                -Symbol("x") ** 2 * sympy.log(Symbol("x"))
+                + sympy.log(Symbol("x"))
+                + Symbol("x") ** 2
+                + 1
+            )
+            / (1 + Symbol("x") ** 2) ** 2,
+        ),
+        (
+            "ឈ",
+            r"f(x) = (4 - x) e^{\frac{1}{2}x}",
+            (2 - Symbol("x")) * sympy.exp(Symbol("x") / 2) / 2,
+        ),
+        (
+            "ញ",
+            r"g(x) = \frac{1}{4} e^{2x} (\cos(2x) + \sin(2x))",
+            sympy.exp(2 * Symbol("x")) * sympy.cos(2 * Symbol("x")),
+        ),
+        (
+            "ដ",
+            r"h(x) = \frac{2e^x + 2x - 2}{e^x}",
+            (4 - 2 * Symbol("x")) / sympy.exp(Symbol("x")),
+        ),
+        (
+            "ឋ",
+            r"f(x) = x - \frac{e^x - 1}{e^x + 1}",
+            (sympy.exp(2 * Symbol("x")) + 1) / (sympy.exp(Symbol("x")) + 1) ** 2,
+        ),
+        (
+            "ឌ",
+            r"g(x) = 1 + \ln\left(2 + \frac{1}{x}\right)",
+            -1 / (Symbol("x") * (2 * Symbol("x") + 1)),
+        ),
+        (
+            "ឍ",
+            r"h(x) = \frac{-2x}{x + 2} + \ln(x + 1)",
+            Symbol("x") ** 2 / ((Symbol("x") + 1) * (Symbol("x") + 2) ** 2),
+        ),
+    ],
+)
+def test_derivative_pdf_all_14_worksheet_exercises(label, latex, expected_expr):
+    """Test all 14 exercises from BacII homework PDF 642f657a-7cd5-44b6-bf59-f14d680beb09.pdf."""
+    parsed = parse_math_text(latex)
+    solver = get_solver("calculus_derivative")
+    assert solver is not None
+
+    result = solver.solve(parsed, "calculus_derivative")
+    assert result.answer is not None
+    assert len(result.steps) == 5
+
+    ans_expr = sympy.sympify(result.answer)
+    assert sympy.simplify(ans_expr - expected_expr) == 0
+
+    # Ensure 5-step pedagogical structure
+    assert result.steps[0].title_km == "កំណត់អនុគមន៍ដើម"
+    assert "ដេរីវេ" in result.steps[1].title_km or "ផល" in result.steps[1].title_km
+    assert result.steps[4].title_km == "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ"
+
+
+
 

@@ -42,6 +42,11 @@ def _to_latex(expr_or_str: Any) -> str:
             text = latex(expr_or_str)
     # Ensure any remaining \log notation is converted to \ln
     text = re.sub(r"\\log\b", r"\\ln", text)
+    # Clean up redundant multiplication artifacts from parser
+    text = re.sub(r"\b1\s*\\cdot\s*", "", text)
+    text = re.sub(r"(?<![0-9a-zA-Z])1\s*\\frac", r"\\frac", text)
+    text = re.sub(r"\\left\(-1\\right\)\s*(\d+)", r"-\1", text)
+    text = re.sub(r"\(-1\)\s*(\d+)", r"-\1", text)
     return text
 
 
@@ -83,13 +88,14 @@ class DerivativeStepGenerator(StepGenerator):
                 if symbols and symbol is None:
                     var = symbols[0]
             elif isinstance(lhs, Function) or (
-                hasattr(lhs, "func") and hasattr(lhs.func, "__name__") and lhs.func.__name__ == "f"
+                hasattr(lhs, "func") and hasattr(lhs.func, "__name__")
             ):
+                fname = getattr(lhs.func, "__name__", "f")
                 args = getattr(lhs, "args", ())
                 if args and isinstance(args[0], Symbol):
                     var = args[0]
-                func_name = f"f({var})"
-                deriv_name = f"f'({var})"
+                func_name = f"{fname}({var})"
+                deriv_name = f"{fname}'({var})"
                 func_expr = rhs
             elif isinstance(rhs, Symbol):
                 func_name = str(rhs)
@@ -385,7 +391,7 @@ class DerivativeStepGenerator(StepGenerator):
                 k = int(1 / c)
                 u_expr = Mul(*rest) if len(rest) > 1 else rest[0]
                 return self._generate_const_denom_exponential_steps(
-                    u_expr, k, var, func_name, deriv_name
+                    u_expr, k, var, func_name, deriv_name, final_ans
                 )
         elif isinstance(func_expr, Add):
             coeffs = []
@@ -404,7 +410,7 @@ class DerivativeStepGenerator(StepGenerator):
                 k = int(1 / coeffs[0])
                 u_expr = Add(*num_terms)
                 return self._generate_const_denom_exponential_steps(
-                    u_expr, k, var, func_name, deriv_name
+                    u_expr, k, var, func_name, deriv_name, final_ans
                 )
 
         # 3. Product rule with exponential factor e.g. x*e^-x or x^2*e^x
@@ -598,7 +604,13 @@ class DerivativeStepGenerator(StepGenerator):
         return steps
 
     def _generate_const_denom_exponential_steps(
-        self, u_expr: Any, k: int, var: Symbol, func_name: str, deriv_name: str
+        self,
+        u_expr: Any,
+        k: int,
+        var: Symbol,
+        func_name: str,
+        deriv_name: str,
+        final_ans: Any = None,
     ) -> list[SolutionStep]:
         """
         Steps for linear exponential function over a constant denominator k:
@@ -608,6 +620,10 @@ class DerivativeStepGenerator(StepGenerator):
         u_prime = sympy.diff(u_expr, var)
         orig_str = f"\\frac{{{_to_latex(u_expr)}}}{{{k}}}"
         res_str = f"\\frac{{{_to_latex(u_prime)}}}{{{k}}}"
+        if final_ans is not None:
+            ans_str = _to_latex(final_ans)
+        else:
+            ans_str = _to_latex(simplify(u_prime / k))
 
         steps.append(
             SolutionStep(
@@ -652,9 +668,9 @@ class DerivativeStepGenerator(StepGenerator):
                 order=4,
                 title_km="សម្រួលកន្សោម",
                 title_en="Simplify Expression",
-                description_km="សម្រួលកន្សោមដេរីវេចុងក្រោយ។",
-                description_en="Simplify resulting derivative expression.",
-                expression=f"{deriv_name} = {res_str}",
+                description_km=f"សម្រួលកន្សោមដេរីវេចុងក្រោយ គេបាន ${deriv_name} = {ans_str}$។",
+                description_en=f"Simplify resulting derivative expression: ${deriv_name} = {ans_str}$.",
+                expression=f"{deriv_name} = {ans_str}",
             )
         )
 
@@ -663,9 +679,9 @@ class DerivativeStepGenerator(StepGenerator):
                 order=5,
                 title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
                 title_en="State Final Derivative Result",
-                description_km=f"ដូចនេះ ${deriv_name} = {res_str}$",
-                description_en=f"Therefore, ${deriv_name} = {res_str}$",
-                expression=f"{deriv_name} = {res_str}",
+                description_km=f"ដូចនេះ ${deriv_name} = {ans_str}$",
+                description_en=f"Therefore, ${deriv_name} = {ans_str}$",
+                expression=f"{deriv_name} = {ans_str}",
             )
         )
 

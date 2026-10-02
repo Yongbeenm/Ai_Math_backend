@@ -78,13 +78,14 @@ class DerivativeSolver(BaseSolver):
                 if symbols:
                     var = symbols[0]
             elif isinstance(lhs, Function) or (
-                hasattr(lhs, "func") and hasattr(lhs.func, "__name__") and lhs.func.__name__ == "f"
+                hasattr(lhs, "func") and hasattr(lhs.func, "__name__")
             ):
+                fname = getattr(lhs.func, "__name__", "f")
                 args = getattr(lhs, "args", ())
                 if args and isinstance(args[0], Symbol):
                     var = args[0]
-                func_name = f"f({var})"
-                deriv_name = f"f'({var})"
+                func_name = f"{fname}({var})"
+                deriv_name = f"{fname}'({var})"
                 func_expr = rhs
             elif isinstance(rhs, Symbol):
                 func_name = str(rhs)

@@ -121,8 +121,8 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
     if text.count("=") > 1:
         raise ExpressionParseError(f"Expression contains multiple equals signs: {text!r}")
 
-    has_inequality = any(
-        op in text for op in ["<", ">", r"\le", r"\ge", r"\leq", r"\geq", "≤", "≥"]
+    has_inequality = bool(
+        re.search(r"(?:<=|>=|≤|≥|<|>|\\(?:le|ge|leq|geq)(?![a-zA-Z]))", text)
     )
 
     if "=" in text and not has_inequality:
