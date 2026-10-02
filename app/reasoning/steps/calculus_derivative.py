@@ -343,9 +343,71 @@ class DerivativeStepGenerator(StepGenerator):
         self, func_expr: Any, var: Symbol, func_name: str, deriv_name: str, final_ans: Any
     ) -> list[SolutionStep]:
         """
-        Steps for exponential functions (both product rule u*e^v and sum/diff quotient).
-        Matches exact Cambodian BacII format.
+        Steps for exponential functions:
+        - Quotient rule e.g. e^x(1 + cos(x)) / (1 - cos(x))
+        - Constant denominator e.g. (e^x + e^-x) / 2
+        - Product rule e.g. x*e^-x or x^2*e^x
+        - Sum / difference with quotient e.g. e^x + 3 - e^x/(e^x + 3)
         """
+        # 1. Pure quotient with variable denominator
+        has_var_den = False
+        if isinstance(func_expr, Mul):
+            for arg in func_expr.args:
+                if (
+                    isinstance(arg, Pow)
+                    and arg.exp.is_number
+                    and arg.exp < 0
+                    and arg.base.has(var)
+                    and not isinstance(arg.base, exp)
+                ):
+                    has_var_den = True
+                    break
+        if has_var_den:
+            return self._generate_quotient_steps(
+                func_expr, var, func_name, deriv_name, final_ans
+            )
+
+        # 2. Linear sum with constant denominator e.g. (e^x + e^-x)/2
+        if isinstance(func_expr, Mul):
+            c = 1
+            rest = []
+            for a in func_expr.args:
+                if a.is_number:
+                    c *= a
+                else:
+                    rest.append(a)
+            if (
+                c != 1
+                and getattr(c, "is_rational", False)
+                and getattr(1 / c, "is_integer", False)
+                and int(1 / c) > 1
+            ):
+                k = int(1 / c)
+                u_expr = Mul(*rest) if len(rest) > 1 else rest[0]
+                return self._generate_const_denom_exponential_steps(
+                    u_expr, k, var, func_name, deriv_name
+                )
+        elif isinstance(func_expr, Add):
+            coeffs = []
+            num_terms = []
+            for term in func_expr.args:
+                c, m = term.as_coeff_Mul()
+                coeffs.append(c)
+                num_terms.append(m)
+            if (
+                coeffs
+                and len(set(coeffs)) == 1
+                and getattr(coeffs[0], "is_rational", False)
+                and getattr(1 / coeffs[0], "is_integer", False)
+                and int(1 / coeffs[0]) > 1
+            ):
+                k = int(1 / coeffs[0])
+                u_expr = Add(*num_terms)
+                return self._generate_const_denom_exponential_steps(
+                    u_expr, k, var, func_name, deriv_name
+                )
+
+        # 3. Product rule with exponential factor e.g. x*e^-x or x^2*e^x
         if isinstance(func_expr, Mul) and func_expr.has(exp):
             return self._generate_product_exponential_steps(
                 func_expr, var, func_name, deriv_name, final_ans
@@ -530,6 +592,80 @@ class DerivativeStepGenerator(StepGenerator):
                 description_km=f"ដូចនេះ ${deriv_name} = {_to_latex(final_ans)}$",
                 description_en=f"Therefore, ${deriv_name} = {_to_latex(final_ans)}$",
                 expression=f"{deriv_name} = {_to_latex(final_ans)}",
+            )
+        )
+
+        return steps
+
+    def _generate_const_denom_exponential_steps(
+        self, u_expr: Any, k: int, var: Symbol, func_name: str, deriv_name: str
+    ) -> list[SolutionStep]:
+        """
+        Steps for linear exponential function over a constant denominator k:
+        y = (e^x + e^-x)/k -> y' = (e^x - e^-x)/k.
+        """
+        steps: list[SolutionStep] = []
+        u_prime = sympy.diff(u_expr, var)
+        orig_str = f"\\frac{{{_to_latex(u_expr)}}}{{{k}}}"
+        res_str = f"\\frac{{{_to_latex(u_prime)}}}{{{k}}}"
+
+        steps.append(
+            SolutionStep(
+                order=1,
+                title_km="កំណត់អនុគមន៍ដើម",
+                title_en="Identify Given Function",
+                description_km=f"យើងមានអនុគមន៍ ${func_name} = {orig_str}$។",
+                description_en=f"Given the function ${func_name} = {orig_str}$.",
+                expression=f"{func_name} = {orig_str}",
+            )
+        )
+
+        steps.append(
+            SolutionStep(
+                order=2,
+                title_km="អនុវត្តប្រមាណវិធីដេរីវេ",
+                title_en="Apply Derivative Operator",
+                description_km=(
+                    f"អនុវត្តវិធានដេរីវេមេគុណថេរ $\\left(\\frac{{u}}{{k}}\\right)' = \\frac{{u'}}{{k}}$ "
+                    f"គេបាន ${deriv_name} = \\frac{{({_to_latex(u_expr)})'}}{{{k}}}$។"
+                ),
+                description_en=(
+                    f"Taking derivative: ${deriv_name} = \\frac{{({_to_latex(u_expr)})'}}{{{k}}}$."
+                ),
+                expression=f"{deriv_name} = \\frac{{({_to_latex(u_expr)})'}}{{{k}}}",
+            )
+        )
+
+        steps.append(
+            SolutionStep(
+                order=3,
+                title_km="គណនាដេរីវេនៃភាគយក",
+                title_en="Differentiate Numerator",
+                description_km=f"គណនាដេរីវេនៃភាគយក $({_to_latex(u_expr)})' = {_to_latex(u_prime)}$ គេបាន ៖",
+                description_en=f"Differentiate numerator: $({_to_latex(u_expr)})' = {_to_latex(u_prime)}$:",
+                expression=f"{deriv_name} = {res_str}",
+            )
+        )
+
+        steps.append(
+            SolutionStep(
+                order=4,
+                title_km="សម្រួលកន្សោម",
+                title_en="Simplify Expression",
+                description_km="សម្រួលកន្សោមដេរីវេចុងក្រោយ។",
+                description_en="Simplify resulting derivative expression.",
+                expression=f"{deriv_name} = {res_str}",
+            )
+        )
+
+        steps.append(
+            SolutionStep(
+                order=5,
+                title_km="សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ",
+                title_en="State Final Derivative Result",
+                description_km=f"ដូចនេះ ${deriv_name} = {res_str}$",
+                description_en=f"Therefore, ${deriv_name} = {res_str}$",
+                expression=f"{deriv_name} = {res_str}",
             )
         )
 

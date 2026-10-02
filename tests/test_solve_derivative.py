@@ -214,3 +214,60 @@ def test_derivative_solver_image3_sub_kh_product_exp():
     assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
 
 
+def test_derivative_solver_image4_sub_k_hyperbolic_exp():
+    r"""Test image4.png sub-exercise ក: y = \frac{e^x + e^{-x}}{2} -> y' = \frac{e^x - e^{-x}}{2}."""
+    parsed = parse_math_text(r"y = \frac{e^x + e^{-x}}{2}")
+    solver = get_solver("calculus_derivative")
+    assert solver is not None
+
+    result = solver.solve(parsed, "calculus_derivative")
+    assert result.answer is not None
+    assert len(result.steps) == 5
+
+    # Check mathematical correctness
+    x = Symbol("x")
+    expected = (sympy.exp(x) - sympy.exp(-x)) / 2
+    ans_expr = sympy.sympify(result.answer)
+    assert sympy.simplify(ans_expr - expected) == 0
+
+    # Lesson awareness: exponential rule
+    assert result.lesson_info is not None
+    assert result.lesson_info["method_id"] == "method_derivative_exponential"
+    assert "អិចស្បូណង់ស្យែល" in result.lesson_info["method_km"]
+
+    # Pedagogical steps in Khmer BacII format
+    assert "កំណត់អនុគមន៍ដើម" in result.steps[0].title_km
+    assert "អនុវត្តប្រមាណវិធីដេរីវេ" in result.steps[1].title_km
+    assert "គណនាដេរីវេនៃភាគយក" in result.steps[2].title_km
+    assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
+
+
+def test_derivative_solver_image4_sub_kh_quotient_trig_exp():
+    r"""Test image4.png sub-exercise ខ: f(x) = \frac{e^x(1 + \cos x)}{1 - \cos x} -> f'(x) = \frac{e^x \sin x (\sin x - 2)}{(1 - \cos x)^2}."""
+    parsed = parse_math_text(r"f(x) = \frac{e^x(1 + \cos x)}{1 - \cos x}")
+    solver = get_solver("calculus_derivative")
+    assert solver is not None
+
+    result = solver.solve(parsed, "calculus_derivative")
+    assert result.answer is not None
+    assert len(result.steps) == 5
+
+    # Check mathematical correctness
+    x = Symbol("x")
+    expected = sympy.exp(x) * sympy.sin(x) * (sympy.sin(x) - 2) / (1 - sympy.cos(x)) ** 2
+    ans_expr = sympy.sympify(result.answer)
+    assert sympy.simplify(ans_expr - expected) == 0
+
+    # Lesson awareness: exponential rule
+    assert result.lesson_info is not None
+    assert result.lesson_info["method_id"] == "method_derivative_exponential"
+
+    # Pedagogical steps in Khmer BacII format (quotient rule)
+    assert "កំណត់អនុគមន៍ដើម" in result.steps[0].title_km
+    assert "អនុវត្តវិធានផលចែក" in result.steps[1].title_km
+    assert "គណនាដេរីវេនៃភាគយក និងភាគបែង" in result.steps[2].title_km
+    assert "ពង្រាយ និងសម្រួលភាគយក" in result.steps[3].title_km
+    assert "សន្និដ្ឋានចម្លើយដេរីវេចុងក្រោយ" in result.steps[4].title_km
+
+
+
