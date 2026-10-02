@@ -18,13 +18,14 @@ from __future__ import annotations
 
 from app.solvers.algebra import EquationSolver, InequalitySolver, SystemSolver
 from app.solvers.base import BaseSolver, ExpressionEvaluator, StatementChecker
-from app.solvers.calculus import DerivativeSolver, LimitSolver
+from app.solvers.calculus import DerivativeSolver, IntegralSolver, LimitSolver
 
 # Registry of all available solvers
 # Order matters: solvers are checked in order, first match wins
 SOLVERS: list[BaseSolver] = [
     # Calculus solvers
     DerivativeSolver(),
+    IntegralSolver(),
     LimitSolver(),
     # Algebra solvers
     EquationSolver(),

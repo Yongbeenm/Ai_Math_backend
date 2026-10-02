@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from app.reasoning.steps.base import StepGenerator
 from app.reasoning.steps.calculus_derivative import DerivativeStepGenerator
+from app.reasoning.steps.calculus_integral import IntegralStepGenerator
 from app.reasoning.steps.calculus_limit import LimitStepGenerator
 from app.reasoning.steps.expansion import ExpansionStepGenerator
 from app.reasoning.steps.inequality import LinearInequalityStepGenerator
@@ -21,6 +22,7 @@ from app.reasoning.steps.system import SystemStepGenerator
 
 _expansion_gen = ExpansionStepGenerator()
 _logarithm_gen = LogarithmStepGenerator()
+_integral_gen = IntegralStepGenerator()
 
 _GENERATORS: dict[str, StepGenerator] = {
     "linear_equation": LinearStepGenerator(),
@@ -30,6 +32,7 @@ _GENERATORS: dict[str, StepGenerator] = {
     "linear_inequality": LinearInequalityStepGenerator(),
     "calculus_limit": LimitStepGenerator(),
     "calculus_derivative": DerivativeStepGenerator(),
+    "calculus_integral": _integral_gen,
     "factored_expression": _expansion_gen,
     "expression_expansion": _expansion_gen,
     "polynomial_expansion": _expansion_gen,

@@ -166,10 +166,14 @@ class ProblemClassifier:
         ):
             return "calculus_limit"
 
-        if isinstance(expr, Derivative):
+        if isinstance(expr, Derivative) or (
+            isinstance(expr, Eq) and (isinstance(expr.rhs, Derivative) or isinstance(expr.lhs, Derivative))
+        ):
             return "calculus_derivative"
 
-        if isinstance(expr, Integral):
+        if isinstance(expr, Integral) or (
+            isinstance(expr, Eq) and (isinstance(expr.rhs, Integral) or isinstance(expr.lhs, Integral))
+        ):
             return "calculus_integral"
 
         # Priority 2: Inequalities
