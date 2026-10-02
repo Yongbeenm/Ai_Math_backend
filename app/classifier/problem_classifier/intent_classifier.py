@@ -41,6 +41,10 @@ _SOLVE_KEYWORDS_KM = [
     "គិត",  # calculate
     "ស្វែងយក",  # seek/find
     "ដោះ",  # solve (short form)
+    "ដេរីវេ",  # derivative
+    "គណនាដេរីវេ",  # calculate derivative
+    "រកដេរីវេ",  # find derivative
+    "ដេរីវេនៃអនុគមន៍",  # derivative of function
 ]
 
 # English phrasings for "solve"
@@ -54,6 +58,9 @@ _SOLVE_KEYWORDS_EN = [
     "find y",
     "find z",
     "determine",
+    "derivative",
+    "differentiate",
+    "derive",
 ]
 
 _SIMPLIFY_KEYWORDS_KM = [

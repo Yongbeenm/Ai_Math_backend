@@ -92,6 +92,8 @@ class MathService:
         elif any(kw in q_lower for kw in ["ពន្លាត", "expand"]):
             if problem_type in ("algebraic_expression", "factored_expression"):
                 problem_type = "expression_expansion"
+        elif any(kw in q_lower for kw in ["ដេរីវេ", "derivative", "differentiate", "derive"]):
+            problem_type = "calculus_derivative"
 
         result = solve(parsed, problem_type)
 

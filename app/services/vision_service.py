@@ -58,7 +58,12 @@ class VisionService:
                 ],
             }
 
-        text_to_solve = exercise_meta.get("primary_expression") or vision_result.detected_text
+        instruction = exercise_meta.get("instruction")
+        primary_expr = exercise_meta.get("primary_expression")
+        if instruction and primary_expr:
+            text_to_solve = f"{instruction} {primary_expr}"
+        else:
+            text_to_solve = primary_expr or vision_result.detected_text
 
         try:
             try:
