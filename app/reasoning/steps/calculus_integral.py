@@ -215,6 +215,8 @@ class IntegralStepGenerator(StepGenerator):
     ) -> list[SolutionStep]:
         steps: list[SolutionStep] = []
         antideriv = sympy.integrate(integrand, var)
+        if isinstance(antideriv, sympy.Piecewise):
+            antideriv = antideriv.args[0].expr
         final_val = expr.doit()
 
         # Step 1: Identify Definite Integral and Bounds

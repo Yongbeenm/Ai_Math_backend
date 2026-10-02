@@ -106,6 +106,14 @@ def _clean_latex_text(text: str) -> str:
     # Ensure lim_{ has leading backslash if missing
     if "lim_{" in t and r"\lim_{" not in t:
         t = t.replace("lim_{", r"\lim_{")
+
+    # Ensure integral single-char bounds have curly braces for latex2sympy2: \int_1^e -> \int_{1}^{e}
+    t = re.sub(r"\\int_([a-zA-Z0-9])", lambda m: r"\int_{" + m.group(1) + r"}", t)
+    t = re.sub(
+        r"(\\int(?:_\{[^}]+\})?)\^([a-zA-Z0-9])(?![a-zA-Z0-9{])",
+        lambda m: m.group(1) + r"^{" + m.group(2) + r"}",
+        t,
+    )
     return t
 
 
@@ -137,6 +145,17 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
         re.search(r"(?:<=|>=|≤|≥|<|>|\\(?:le|ge|leq|geq)(?![a-zA-Z]))", text)
     )
 
+    def _normalize_parsed_expr(ex: Any) -> Any:
+        if hasattr(ex, "free_symbols"):
+            e_syms = [s for s in ex.free_symbols if s.name in ("e", r"\mathrm{e}")]
+            if e_syms:
+                ex = ex.subs({s: sympy.E for s in e_syms})
+        ex = ex.replace(
+            lambda a: isinstance(a, sympy.log) and len(a.args) == 2 and a.args[1] == sympy.E,
+            lambda a: sympy.log(a.args[0]),
+        )
+        return ex
+
     if "=" in text and not has_inequality:
         lhs_text, rhs_text = text.split("=", 1)
         lhs_clean = lhs_text.strip()
@@ -148,20 +167,15 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
         else:
             lhs = latex2sympy(lhs_clean)
         rhs = latex2sympy(rhs_text.strip())
+
         res_eq = Eq(lhs, rhs)
-        if hasattr(res_eq, "free_symbols"):
-            e_syms = [s for s in res_eq.free_symbols if s.name in ("e", r"\mathrm{e}")]
-            if e_syms:
-                res_eq = res_eq.subs({s: sympy.E for s in e_syms})
+        res_eq = _normalize_parsed_expr(res_eq)
         return res_eq, True
     else:
         expr = latex2sympy(text.strip())
         if isinstance(expr, (list, tuple)):
             expr = expr[0]
-        if hasattr(expr, "free_symbols"):
-            e_syms = [s for s in expr.free_symbols if s.name in ("e", r"\mathrm{e}")]
-            if e_syms:
-                expr = expr.subs({s: sympy.E for s in e_syms})
+        expr = _normalize_parsed_expr(expr)
         return expr, isinstance(expr, Eq)
 
 

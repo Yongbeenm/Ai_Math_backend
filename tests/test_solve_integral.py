@@ -486,6 +486,71 @@ def test_integral_image2_exercise_b():
     assert result.lesson_info["method_id"] == "method_integral_definite"
 
 
+def test_integral_definite_polynomial_evaluation():
+    r"""Definite: \int_1^2 (3x^2 - 2x + 1) dx = 5."""
+    parsed = parse_math_text(r"\int_1^2 (3x^2 - 2x + 1) \, dx")
+    solver = get_solver("calculus_integral")
+    assert solver is not None
+    result = solver.solve(parsed, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(result.answer) - 5) == 0
+
+
+def test_integral_definite_trigonometric():
+    r"""Definite: \int_0^{\pi/2} \cos x dx = 1 and \int_0^{\pi/4} 1/\cos^2 x dx = 1."""
+    solver = get_solver("calculus_integral")
+    assert solver is not None
+
+    p1 = parse_math_text(r"\int_0^{\pi/2} \cos x \, dx")
+    r1 = solver.solve(p1, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r1.answer) - 1) == 0
+
+    p2 = parse_math_text(r"\int_0^{\pi/4} \frac{1}{\cos^2 x} \, dx")
+    r2 = solver.solve(p2, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r2.answer) - 1) == 0
+
+
+def test_integral_definite_exponential():
+    r"""Definite: \int_0^1 e^{2x} dx = (e^2-1)/2 and \int_0^1 2x e^{x^2} dx = e - 1."""
+    solver = get_solver("calculus_integral")
+    assert solver is not None
+
+    p1 = parse_math_text(r"\int_0^1 e^{2x} \, dx")
+    r1 = solver.solve(p1, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r1.answer) - (exp(2) - 1) / 2) == 0
+
+    p2 = parse_math_text(r"\int_0^1 2x e^{x^2} \, dx")
+    r2 = solver.solve(p2, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r2.answer) - (exp(1) - 1)) == 0
+
+
+def test_integral_definite_logarithmic_rational():
+    r"""Definite: \int_1^e 1/x dx = 1 and \int_1^e \frac{\ln x}{x} dx = 1/2."""
+    solver = get_solver("calculus_integral")
+    assert solver is not None
+
+    p1 = parse_math_text(r"\int_1^e \frac{1}{x} \, dx")
+    r1 = solver.solve(p1, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r1.answer) - 1) == 0
+
+    p2 = parse_math_text(r"\int_1^e \frac{\ln x}{x} \, dx")
+    r2 = solver.solve(p2, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r2.answer) - Rational(1, 2)) == 0
+
+
+def test_integral_definite_by_parts():
+    r"""Definite: \int_0^1 x e^x dx = 1 and \int_1^e x \ln x dx = (e^2+1)/4."""
+    solver = get_solver("calculus_integral")
+    assert solver is not None
+
+    p1 = parse_math_text(r"\int_0^1 x e^x \, dx")
+    r1 = solver.solve(p1, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r1.answer) - 1) == 0
+
+    p2 = parse_math_text(r"\int_1^e x \ln x \, dx")
+    r2 = solver.solve(p2, "calculus_integral")
+    assert sympy.simplify(sympy.sympify(r2.answer) - (exp(2) + 1) / 4) == 0
+
+
 def test_integral_e2e_process_question():
     r"""Test process_question with Khmer instruction: គណនាអាំងតេក្រាល \int x e^{-x} dx."""
     res = process_question(r"គណនាអាំងតេក្រាល \int x e^{-x} dx")
