@@ -120,6 +120,10 @@ def _clean_latex_text(text: str) -> str:
 def _extract_symbols(expr: sympy.Expr | Eq) -> list[Symbol]:
     """Extract all active variables including bound variables in limits/integrals."""
     symbols = set(expr.free_symbols)
+    if isinstance(expr, (tuple, list, sympy.Tuple)):
+        for item in expr:
+            symbols.update(_extract_symbols(item))
+        return sorted(symbols, key=lambda s: s.name)
     if isinstance(expr, Limit):
         if len(expr.args) > 1 and isinstance(expr.args[1], Symbol):
             symbols.add(expr.args[1])
@@ -139,7 +143,16 @@ def _parse_latex(text: str) -> tuple[sympy.Expr | Eq, bool]:
     text = _clean_latex_text(text)
 
     if text.count("=") > 1:
+        parts = [
+            p.strip()
+            for p in re.split(r"[,;\n]|\s*\\(?:quad|qquad)\s*|\s*\\text\{\s*(?:and|និង)\s*\}\s*", text)
+            if p.strip()
+        ]
+        if len(parts) > 1 and all(p.count("=") == 1 for p in parts):
+            sub_results = [_parse_latex(p) for p in parts]
+            return sympy.Tuple(*[r[0] for r in sub_results]), True
         raise ExpressionParseError(f"Expression contains multiple equals signs: {text!r}")
+
 
     has_inequality = bool(
         re.search(r"(?:<=|>=|≤|≥|<|>|\\(?:le|ge|leq|geq)(?![a-zA-Z]))", text)
@@ -193,10 +206,32 @@ def parse_math_text(raw_expression: str) -> ParsedMath:
     text = raw_expression.strip()
 
     if text.count("=") > 1:
+        parts = [
+            p.strip()
+            for p in re.split(r"[,;\n]|\s*\\(?:quad|qquad)\s*|\s*\\text\{\s*(?:and|និង)\s*\}\s*", text)
+            if p.strip()
+        ]
+        if len(parts) > 1 and all(p.count("=") == 1 for p in parts):
+            try:
+                sub_parsed = [parse_math_text(p) for p in parts]
+                composite_expr = sympy.Tuple(*[p.sympy_expr for p in sub_parsed])
+                all_symbols = sorted(
+                    set().union(*[p.symbols for p in sub_parsed]),
+                    key=lambda s: s.name,
+                )
+                return ParsedMath(
+                    raw_text=raw_expression,
+                    is_equation=True,
+                    sympy_expr=composite_expr,
+                    symbols=all_symbols,
+                )
+            except Exception:
+                pass
         raise ExpressionParseError(f"Expression contains multiple equals signs: {raw_expression!r}")
 
     # If the expression uses LaTeX notation, attempt LaTeX parsing first
     is_latex = "\\" in text or ("{" in text and "}" in text) or "lim" in text.lower()
+
     if is_latex and LATEX2SYMPY_AVAILABLE:
         try:
             expr, is_equation = _parse_latex(text)

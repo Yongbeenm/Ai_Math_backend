@@ -18,11 +18,13 @@ from app.reasoning.steps.algebra.linear import LinearStepGenerator
 from app.reasoning.steps.algebra.logarithm import LogarithmStepGenerator
 from app.reasoning.steps.algebra.polynomial import PolynomialStepGenerator
 from app.reasoning.steps.algebra.quadratic import QuadraticStepGenerator
+from app.reasoning.steps.algebra.sequence import SequenceStepGenerator
 from app.reasoning.steps.algebra.system import SystemStepGenerator
 
 _expansion_gen = ExpansionStepGenerator()
 _logarithm_gen = LogarithmStepGenerator()
 _integral_gen = IntegralStepGenerator()
+_sequence_gen = SequenceStepGenerator()
 
 _GENERATORS: dict[str, StepGenerator] = {
     "linear_equation": LinearStepGenerator(),
@@ -38,7 +40,14 @@ _GENERATORS: dict[str, StepGenerator] = {
     "polynomial_expansion": _expansion_gen,
     "logarithm_evaluation": _logarithm_gen,
     "logarithm_simplification": _logarithm_gen,
+    "sequence": _sequence_gen,
+    "sequence_convergence": _sequence_gen,
+    "sequence_limit": _sequence_gen,
+    "sequence_recurrence": _sequence_gen,
+    "sequence_ratio": _sequence_gen,
+    "real_sequence": _sequence_gen,
 }
+
 
 
 def get_step_generator(problem_type: str) -> StepGenerator | None:

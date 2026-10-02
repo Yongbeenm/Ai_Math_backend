@@ -35,7 +35,10 @@ class InstructionType(str, Enum):
     COMPARE = "compare"  # ប្រៀបធៀប - compare expressions
     GRAPH = "graph"  # គូរក្រាប - draw graph
     DERIVATIVE = "derivative"  # គណនាដេរីវេ - calculate derivative
+    CONVERGENCE = "convergence"  # សិក្សាភាពរួម ឬរីក - study convergence/divergence
+    SEQUENCE = "sequence"  # ស្វ៊ីត - sequence operations
     UNKNOWN = "unknown"  # Cannot determine instruction type
+
 
 
 class ProblemLabel(str, Enum):

@@ -50,6 +50,13 @@ class ParsedInstruction:
 
         instruction_type = action_to_type.get(self.action, InstructionType.UNKNOWN)
 
+        # Sequence-specific instruction refinement
+        if "sequence" in self.target_objects:
+            if any(k in self.text for k in ("រួម", "រីក", "convergen")):
+                instruction_type = InstructionType.CONVERGENCE
+            elif instruction_type in (InstructionType.FIND, InstructionType.UNKNOWN):
+                instruction_type = InstructionType.SEQUENCE
+
         return Instruction(
             text=self.text,
             language=self.language,
@@ -57,6 +64,7 @@ class ParsedInstruction:
             confidence=self.confidence,
             detected_keywords=self.matched_keywords,
         )
+
 
 
 class InstructionDetector:

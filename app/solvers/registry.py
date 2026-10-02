@@ -16,13 +16,15 @@ based on the problem_type string from the classifier.
 
 from __future__ import annotations
 
-from app.solvers.algebra import EquationSolver, InequalitySolver, SystemSolver
+from app.solvers.algebra import EquationSolver, InequalitySolver, SequenceSolver, SystemSolver
 from app.solvers.base import BaseSolver, ExpressionEvaluator, StatementChecker
 from app.solvers.calculus import DerivativeSolver, IntegralSolver, LimitSolver
 
 # Registry of all available solvers
 # Order matters: solvers are checked in order, first match wins
 SOLVERS: list[BaseSolver] = [
+    # Sequence solver
+    SequenceSolver(),
     # Calculus solvers
     DerivativeSolver(),
     IntegralSolver(),
@@ -35,6 +37,7 @@ SOLVERS: list[BaseSolver] = [
     StatementChecker(),
     ExpressionEvaluator(),
 ]
+
 
 
 def get_solver(problem_type: str) -> BaseSolver | None:

@@ -15,9 +15,11 @@ detailed ProblemCharacteristics (for analysis and UI hints).
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import sympy
+
 from sympy import (
     Abs,
     Derivative,
@@ -29,12 +31,16 @@ from sympy import (
     Poly,
     Rational,
     Symbol,
+    Tuple,
     cos,
     expand,
+    oo,
     sin,
     sqrt,
     tan,
 )
+
+
 from sympy.core.relational import Relational
 
 from app.models.problem import ProblemCharacteristics
@@ -162,10 +168,20 @@ class ProblemClassifier:
     ) -> str:
         """Classify the main problem type."""
 
-        # Priority 1: Calculus
+        # Priority 0.5: Sequence recurrence tuple
+        if isinstance(expr, (Tuple, list, tuple)):
+            if any(self._is_recurrence_equation(e) or str(getattr(e, "lhs", "")).endswith("_1") for e in expr if isinstance(e, Eq)):
+                return "sequence_recurrence"
+
+        # Priority 1: Calculus and Sequence Limits
         if isinstance(expr, Limit) or (
             isinstance(expr, Eq) and (isinstance(expr.rhs, Limit) or isinstance(expr.lhs, Limit))
         ):
+            lim = expr if isinstance(expr, Limit) else (expr.rhs if isinstance(expr.rhs, Limit) else expr.lhs)
+            var = lim.args[1] if len(lim.args) > 1 else None
+            target = lim.args[2] if len(lim.args) > 2 else None
+            if var and str(var) in ("n", "k") and target in (oo, -oo):
+                return "sequence_limit"
             return "calculus_limit"
 
         if isinstance(expr, Derivative) or (
@@ -177,6 +193,14 @@ class ProblemClassifier:
             isinstance(expr, Eq) and (isinstance(expr.rhs, Integral) or isinstance(expr.lhs, Integral))
         ):
             return "calculus_integral"
+
+        # Priority 1.5: Sequence Recurrence Equation
+        if isinstance(expr, Eq) and self._is_recurrence_equation(expr):
+            return "sequence_recurrence"
+
+        # Priority 1.6: Sequence Definition Equation (e.g. U_n = ...)
+        if isinstance(expr, Eq) and self._is_sequence_equation(expr):
+            return "sequence"
 
         # Priority 2: Inequalities
         if isinstance(
@@ -196,7 +220,20 @@ class ProblemClassifier:
         # Priority 4: Equations
         return self._classify_equation(expr, parsed, chars)
 
+    def _is_sequence_equation(self, eq: Eq) -> bool:
+        lhs_str = str(eq.lhs)
+        if re.search(r"^[uUvVwWaAbB]_(?:\{?n\}?|\{?k\}?)$", lhs_str):
+            return True
+        return False
+
+    def _is_recurrence_equation(self, eq: Eq) -> bool:
+        lhs_str = str(eq.lhs)
+        if re.search(r"^[a-zA-Z]_(?:\{?n[+-]\d+\}?|np1|n_plus_1)", lhs_str):
+            return True
+        return False
+
     def _classify_inequality(self, expr: Relational, parsed: ParsedMath) -> str:
+
         """Classify inequality types."""
         if len(parsed.symbols) == 0:
             return "numeric_inequality"

@@ -86,23 +86,35 @@ class LimitSolver(BaseSolver):
         # Evaluate the limit
         try:
             ans_val = simplify_real_roots(limit_obj.doit())
+            if ans_val.has(sympy.I) or "depends on" in str(ans_val):
+                raise ValueError("Indeterminate complex limit")
             ans_str = str(ans_val)
         except Exception as e:
-            return SolveResult(
-                answer=None,
-                variable=variable_name,
-                is_verified=False,
-                steps=[
-                    SolutionStep(
-                        order=1,
-                        description_km=f"មិនអាចគណនាលីមីតបាន៖ {str(e)}",
-                        description_en=f"Unable to evaluate limit: {str(e)}",
-                        expression=str(limit_obj),
-                        title_km="កំហុសគណនាលីមីត",
-                        title_en="Evaluation Error",
-                    )
-                ],
-            )
+            # Fallback for sequence oscillating limits (e.g. (-1)^n, sin, cos at infinity)
+            from app.solvers.algebra.sequence_solver import evaluate_sequence_limit
+
+            var_sym = Symbol(variable_name) if variable_name else Symbol("n")
+            fallback_val = evaluate_sequence_limit(limit_obj.args[0], var_sym)
+            if fallback_val is not None:
+                ans_val = fallback_val
+                ans_str = str(ans_val)
+            else:
+                return SolveResult(
+                    answer=None,
+                    variable=variable_name,
+                    is_verified=False,
+                    steps=[
+                        SolutionStep(
+                            order=1,
+                            description_km=f"មិនអាចគណនាលីមីតបាន៖ {str(e)}",
+                            description_en=f"Unable to evaluate limit: {str(e)}",
+                            expression=str(limit_obj),
+                            title_km="កំហុសគណនាលីមីត",
+                            title_en="Evaluation Error",
+                        )
+                    ],
+                )
+
 
         # Generate steps using step generator if available
         generator = self._get_step_generator("calculus_limit")

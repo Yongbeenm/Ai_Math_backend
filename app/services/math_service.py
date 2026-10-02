@@ -98,8 +98,17 @@ class MathService:
                 problem_type = "expression_expansion"
         elif any(kw in q_lower for kw in ["ដេរីវេ", "derivative", "differentiate", "derive"]):
             problem_type = "calculus_derivative"
+        elif any(kw in q_lower for kw in ["រួម ឬរីក", "រួមឬរីក", "ភាពរួម", "ស្វ៊ីតរួម", "ស្វ៊ីតរីក"]):
+            problem_type = "sequence_convergence"
+        elif any(kw in q_lower for kw in ["ស្វ៊ីត", "ស្វិត", "sequence"]):
+            if problem_type not in ("sequence_recurrence", "sequence_convergence"):
+                if "lim" in raw_expression.lower() or "លីមីត" in q_lower:
+                    problem_type = "sequence_limit"
+                else:
+                    problem_type = "sequence"
 
         # Check cache before solving
+
         cache = get_solve_cache()
         cache_key_expr = f"{raw_expression}::{problem_type}"
         result = cache.get(cache_key_expr, problem_type)

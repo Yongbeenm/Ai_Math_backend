@@ -174,10 +174,19 @@ class KhmerMathVocabulary:
             synonyms=["គណនាដេរីវេ", "រកដេរីវេ", "ដេរីវេនៃអនុគមន៍", "គណនាដេរីវេនៃអនុគមន៍"],
             context_words=["អនុគមន៍", "កន្សោម", "ខាងក្រោម"],
         ),
+        # Sequence & Convergence (ស្វ៊ីត, សិក្សាភាពរួម ឬរីក)
+        InstructionPattern(
+            keywords=["ស្វ៊ីត"],
+            action=MathAction.DETERMINE,
+            language="km",
+            synonyms=["ស្វិត", "ភាពរួម", "ស្វ៊ីតរួម", "ស្វ៊ីតរីក", "រួម ឬរីក", "រួមឬរីក"],
+            context_words=["តួទូទៅ", "ខាងក្រោម", "កំណត់", "លីមីត"],
+        ),
     ]
 
     # Instruction patterns (English)
     INSTRUCTION_PATTERNS_EN = [
+
         InstructionPattern(
             keywords=["solve"],
             action=MathAction.SOLVE,
@@ -297,6 +306,8 @@ class KhmerMathVocabulary:
         "limit": ["លីមីត", "កំណត់"],
         "derivative": ["ដេរីវេ", "អនុគមន៍"],
         "integral": ["អាំងតេក្រាល", "សមាមាត្រ"],
+        "sequence": ["ស្វ៊ីត", "ស្វិត", "ស្វ៊ីតចំនួនពិត"],
+        "recurrence": ["ទំនាក់ទំនងដំណាល", "ដំណាល"],
         "matrix": ["ម៉ាទ្រីស", "តារាង"],
         "vector": ["វ៉ិចទ័រ", "វ៉ិចទ័រ"],
         "variable": ["អញ្ញាត", "តម្រូវ"],
@@ -316,12 +327,15 @@ class KhmerMathVocabulary:
         "limit": ["limit", "limits"],
         "derivative": ["derivative", "derivatives"],
         "integral": ["integral", "integrals"],
+        "sequence": ["sequence", "sequences"],
+        "recurrence": ["recurrence", "recurrence relation"],
         "matrix": ["matrix", "matrices"],
         "vector": ["vector", "vectors"],
         "variable": ["variable", "variables", "unknown", "unknowns"],
         "coefficient": ["coefficient", "coefficients"],
         "constant": ["constant", "constants"],
     }
+
 
     # Modifier words (Khmer)
     MODIFIERS_KM = {

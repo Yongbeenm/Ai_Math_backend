@@ -344,8 +344,18 @@ class LimitStepGenerator(StepGenerator):
                     order += 1
 
         # Step 4: Final Limit Value
-        final_val = simplify_real_roots(expr.doit())
+        try:
+            final_val = simplify_real_roots(expr.doit())
+            if final_val.has(sympy.I) or "depends on" in str(final_val):
+                raise ValueError("complex limit")
+        except Exception:
+            from app.solvers.algebra.sequence_solver import evaluate_sequence_limit
+            final_val = evaluate_sequence_limit(f, var)
+            if final_val is None:
+                final_val = oo
+
         eval_expr_latex = latex(reduced_expr) if reduced_expr is not None else latex(f)
+
         steps.append(
             SolutionStep(
                 order=order,

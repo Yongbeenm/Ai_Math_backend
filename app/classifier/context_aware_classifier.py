@@ -79,9 +79,21 @@ class ContextAwareClassifier:
         InstructionType.DERIVATIVE: [
             "calculus_derivative",
         ],
+        InstructionType.CONVERGENCE: [
+            "sequence_convergence",
+            "sequence",
+            "sequence_limit",
+        ],
+        InstructionType.SEQUENCE: [
+            "sequence",
+            "sequence_limit",
+            "sequence_recurrence",
+            "sequence_convergence",
+        ],
     }
 
     def __init__(self):
+
         """Initialize context-aware classifier."""
         self.base_classifier = ProblemClassifier()
 

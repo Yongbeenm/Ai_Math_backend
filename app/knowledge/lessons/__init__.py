@@ -10,6 +10,11 @@ from app.knowledge.lessons.geometry import chapter_geometry, lesson_spatial_geom
 from app.knowledge.lessons.integrals import chapter_integrals, lesson_integrals
 from app.knowledge.lessons.limits import chapter_limits, lesson_limits
 from app.knowledge.lessons.logarithms import chapter_logarithms, lesson_natural_logarithm
+from app.knowledge.lessons.sequences import (
+    chapter_sequences,
+    lesson_sequence_limits,
+    lesson_sequence_recurrence,
+)
 
 __all__ = [
     "chapter_algebra",
@@ -20,6 +25,7 @@ __all__ = [
     "chapter_logarithms",
     "chapter_integrals",
     "chapter_geometry",
+    "chapter_sequences",
     "lesson_expansion",
     "lesson_factorization",
     "lesson_limits",
@@ -29,4 +35,7 @@ __all__ = [
     "lesson_natural_logarithm",
     "lesson_integrals",
     "lesson_spatial_geometry",
+    "lesson_sequence_limits",
+    "lesson_sequence_recurrence",
 ]
+
